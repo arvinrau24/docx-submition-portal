@@ -1,0 +1,1207 @@
+// Access Digital themed views - matching https://accessdigital.pyrohub.my/
+const { FORM_DEFINITIONS } = require('../backend/db');
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function siteHeader(user, clientId = null) {
+  const roleLabels = { admin: 'Admin' };
+  const displayLabel = user.role === 'client' && clientId ? clientId : roleLabels[user.role] || user.role;
+  const roleBadge = `<span class="role-badge">${displayLabel}</span>`;
+
+  let links = '';
+  if (user.role === 'admin') {
+    links = `<a href="/admin">Dashboard</a>`;
+  }
+
+  return `
+    <header class="site-header">
+      <div class="header-container">
+        <a href="/" class="site-logo">
+          <img src="/ACCESS-DIGITAL-LOGO-01-1024x524.png" alt="Access Digital">
+          <span class="site-logo-text">CLIENT PORTAL</span>
+        </a>
+        <nav class="header-nav">
+          ${links}
+          ${roleBadge}
+          <a href="/logout">Logout</a>
+        </nav>
+      </div>
+    </header>
+  `;
+}
+
+function htmlPage(title, content, user = null, clientId = null) {
+  const header = user ? siteHeader(user, clientId) : '';
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title} - Access Digital Portal</title>
+      <link rel="stylesheet" href="/styles.css">
+    </head>
+    <body>
+      ${header}
+      ${content}
+    </body>
+    </html>
+  `;
+}
+
+// ============ LOGIN PAGE ============
+
+function loginPage(error = null) {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Client Portal Login - Access Digital</title>
+      <link rel="stylesheet" href="/styles.css">
+    </head>
+    <body>
+      <div class="login-page">
+        <video id="login-bg-video" autoplay muted loop playsinline poster="/ACCESS-DIGITAL-LOGO-01-1024x524.png">
+          <source src="/login-background.mp4" type="video/mp4">
+        </video>
+        <div class="login-card">
+          <!-- Left Side - Login Form -->
+          <div class="login-left">
+            <div class="login-branding">
+              <img src="/ACCESS-DIGITAL-LOGO-01-1024x524.png" alt="Access Digital">
+            </div>
+            <div class="login-welcome">
+              <h1>Welcome to the AD Client Portal</h1>
+            </div>
+            <p class="login-subtitle">Sign in to securely upload and manage your required documents.</p>
+             
+            ${error ? `<div class="alert alert-error">${error}</div>` : ''}
+             
+            <form method="POST" action="/login">
+              <div class="form-group">
+                <label>Client ID / Username</label>
+                <input type="text" name="username" required placeholder="Company name / username" autofocus>
+              </div>
+              <div class="form-group">
+                <label for="login-password">Password</label>
+                <div class="password-field">
+                  <input id="login-password" type="password" name="password" required placeholder="Enter your password">
+                  <button type="button" class="password-toggle" aria-label="Show password" aria-controls="login-password" aria-pressed="false" title="Show password">
+                    <svg class="password-eye password-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+                    <svg class="password-eye password-eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6.5 0 10 6 10 6a18.1 18.1 0 0 1-3.1 3.7M6.2 6.2C3.5 8.1 2 12 2 12s3.5 6 10 6c1.5 0 2.9-.3 4.1-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                  </button>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+
+<div class="login-help-links">
+               <a href="/help/password-reset" class="helper-link">Forgot Password?</a>
+               <a href="/help/support" class="helper-link">Support</a>
+             </div>
+             <p style="margin-top: 16px; font-size: 0.85em; color: var(--color-text-muted);">First time login? Use the temporary password shared with you and change it immediately after signing in.</p>
+           </div>
+           
+          <!-- Right Side - Secure Submission Panel -->
+          <div class="login-right">
+            <div class="login-right-content">
+              <span class="panel-badge">Secure document submission</span>
+              <h2>Secure Document Submission</h2>
+              <p>Upload your required documents through our secure client portal. Our team will review your submission and process it with the relevant third parties.</p>
+              <div class="process-list">
+                <div class="process-item"><span class="process-number">1</span><span>Get your Client ID</span></div>
+                <div class="process-item"><span class="process-number">2</span><span>Upload the requested documents</span></div>
+                <div class="process-item"><span class="process-number">3</span><span>Our team reviews your submission</span></div>
+                <div class="process-item"><span class="process-number">4</span><span>We process your application</span></div>
+                <div class="process-item"><span class="process-number">5</span><span>You receive updates as your application progresses</span></div>
+              </div>
+              <div class="security-list">
+                <div class="security-item">Secure encrypted connection</div>
+                <div class="security-item">Confidential document handling</div>
+                <div class="security-item">Authorized access only</div>
+                <div class="security-item">Status updates throughout the process</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        const passwordInput = document.getElementById('login-password');
+        const passwordToggle = document.querySelector('.password-toggle');
+        passwordToggle?.addEventListener('click', () => {
+          const showPassword = passwordInput.type === 'password';
+          passwordInput.type = showPassword ? 'text' : 'password';
+          passwordToggle.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+          passwordToggle.setAttribute('title', showPassword ? 'Hide password' : 'Show password');
+          passwordToggle.setAttribute('aria-pressed', String(showPassword));
+          passwordToggle.classList.toggle('is-visible', showPassword);
+        });
+      </script>
+    </body>
+    </html>
+  `;
+}
+
+// ============ DASHBOARD PAGES ============
+
+function adminDashboard(clients, user) {
+  const clientRows = clients.map(c => `
+    <tr>
+      <td><a href="/admin/client/${c.id}" style="color: var(--color-sky-blue); text-decoration: none;">${c.client_id}</a></td>
+      <td><strong>${c.company_name}</strong></td>
+      <td>${c.form_group}</td>
+      <td><span class="badge badge-${c.submission_status === 'Submitted' ? 'submitted' : 'pending'}">${c.submission_status}</span></td>
+      <td>${new Date(c.created_at).toLocaleDateString()}</td>
+    </tr>
+  `).join('');
+
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Admin Dashboard</h2>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="/admin/help" class="btn btn-secondary btn-sm">Help Centre</a>
+            <a href="/admin/add-client" class="btn btn-success btn-sm">+ Add New Client</a>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Client ID</th>
+              <th>Company Name</th>
+              <th>Form</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clientRows || '<tr><td colspan="5" style="text-align:center; color: var(--color-text);">No clients yet</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  return htmlPage('Admin Dashboard', content, user);
+}
+
+// ============ HELP CENTRE PAGES ============
+
+function helpRequestPage(type, message = null, error = null) {
+  const isReset = type === 'password_reset';
+  const title = isReset ? 'Reset your password' : 'Contact Support';
+  const intro = isReset
+    ? 'Enter the Client ID and authorised email address registered with your account. Our team will verify the request and issue a new temporary password.'
+    : 'Tell our support team what you need help with. Please do not include passwords or confidential banking information.';
+  const content = `
+    <div class="container" style="max-width:760px;"><div class="card">
+      <div class="card-header"><h2>${title}</h2><a href="/login" class="btn btn-secondary btn-sm">Back to login</a></div>
+      <p style="margin-bottom:24px; color:var(--color-text-muted);">${intro}</p>
+      ${message ? `<div class="alert alert-success">${escapeHtml(message)}</div>` : ''}
+      ${error ? `<div class="alert alert-error">${escapeHtml(error)}</div>` : ''}
+      ${!message ? `<form method="POST" action="/help/${isReset ? 'password-reset' : 'support'}" class="form-light">
+        <div class="form-grid-2"><div class="form-group"><label>Your name</label><input type="text" name="requester_name" maxlength="100" required autocomplete="name"></div><div class="form-group"><label>Your email</label><input type="email" name="requester_email" maxlength="254" required autocomplete="email"></div></div>
+        <div class="form-group"><label>Client ID ${isReset ? '' : '(optional)'}</label><input type="text" name="client_id" maxlength="50" ${isReset ? 'required' : ''} placeholder="e.g. AD-0001"></div>
+        <div class="form-group"><label>${isReset ? 'Reason (optional)' : 'Subject'}</label><input type="text" name="subject" maxlength="150" ${isReset ? '' : 'required'} placeholder="${isReset ? 'I cannot access my account' : 'How can we help?'}"></div>
+        <div class="form-group"><label>Details</label><textarea name="message" rows="5" maxlength="2000" required placeholder="Provide enough detail for our team to assist you."></textarea></div>
+        <button type="submit" class="btn btn-primary">${isReset ? 'Request password reset' : 'Send support request'}</button>
+      </form>` : ''}
+    </div></div>`;
+  return htmlPage(title, content);
+}
+
+function adminHelpPage(tickets, user, notice = null) {
+  const rows = tickets.map(ticket => `<tr><td>#${ticket.id}</td><td><strong>${ticket.request_type === 'password_reset' ? 'Password reset' : 'Support'}</strong><br><small>${escapeHtml(ticket.subject)}</small></td><td>${escapeHtml(ticket.requester_name)}<br><small>${escapeHtml(ticket.requester_email)}</small></td><td>${escapeHtml(ticket.client_reference || 'Not provided')}</td><td><span class="badge badge-${ticket.status === 'resolved' ? 'submitted' : 'pending'}">${escapeHtml(ticket.status.replace('_', ' '))}</span></td><td><a href="/admin/help/${ticket.id}" class="btn btn-secondary btn-sm">Open</a></td></tr>`).join('');
+  const content = `<div class="container"><div class="card"><div class="card-header"><h2>Help Centre</h2><a href="/admin" class="btn btn-secondary btn-sm">Back to dashboard</a></div>${notice ? `<div class="alert alert-success">${escapeHtml(notice)}</div>` : ''}<table><thead><tr><th>ID</th><th>Request</th><th>Requester</th><th>Client ID</th><th>Status</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="6" style="text-align:center;">No help requests yet.</td></tr>'}</tbody></table></div></div>`;
+  return htmlPage('Help Centre', content, user);
+}
+
+function adminHelpDetailPage(ticket, user, tempPassword = null) {
+  const content = `<div class="container" style="max-width:900px;"><div class="card"><div class="card-header"><h2>Help request #${ticket.id}</h2><a href="/admin/help" class="btn btn-secondary btn-sm">Back to Help Centre</a></div>${tempPassword ? `<div class="alert alert-warning"><strong>New temporary password:</strong> <code>${escapeHtml(tempPassword)}</code><br>Share this securely with the verified requester. It will only be shown once.</div>` : ''}<div class="status-grid"><div class="status-card"><h4>Type</h4><div class="status-value">${ticket.request_type === 'password_reset' ? 'Password reset' : 'Support'}</div></div><div class="status-card"><h4>Status</h4><div class="status-value">${escapeHtml(ticket.status.replace('_', ' '))}</div></div><div class="status-card"><h4>Client ID</h4><div class="status-value">${escapeHtml(ticket.client_reference || 'Not provided')}</div></div><div class="status-card"><h4>Requester</h4><div class="status-value">${escapeHtml(ticket.requester_name)}<br>${escapeHtml(ticket.requester_email)}</div></div></div><h3 style="margin-top:28px;">${escapeHtml(ticket.subject)}</h3><p style="white-space:pre-wrap;">${escapeHtml(ticket.message)}</p><form method="POST" action="/admin/help/${ticket.id}/update" class="form-light" style="margin-top:28px;"><div class="form-group"><label>Internal note</label><textarea name="admin_note" rows="4" maxlength="2000">${escapeHtml(ticket.admin_note || '')}</textarea></div><div style="display:flex; gap:12px; flex-wrap:wrap;"><button name="status" value="in_progress" class="btn btn-secondary">Mark in progress</button><button name="status" value="resolved" class="btn btn-success">Resolve request</button>${ticket.request_type === 'password_reset' && ticket.status !== 'resolved' ? '<button name="status" value="reset_password" class="btn btn-primary" onclick="return confirm(\'Generate a new temporary password for this client?\')">Generate temporary password</button>' : ''}</div></form></div></div>`;
+  return htmlPage('Help Request', content, user);
+}
+
+function addClientPage(user, error = null) {
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Customer Onboarding Form</h2>
+          <a href="/admin" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+        </div>
+        ${error ? `<div class="alert alert-error">${error}</div>` : ''}
+        
+        <div class="instruction-banner">
+          <strong>Instructions:</strong> Please complete all information below. All email and banking details must be official, primary and active.
+        </div>
+
+        <form method="POST" action="/admin/add-client" class="form-light" id="onboarding-form">
+          
+          <!-- FORM GROUP SELECTION -->
+          <div class="form-grid-full"><div class="form-group"><label class="required">Form Group</label><select name="form_group" required><option value="">Select Form Group</option><option value="A">Form A</option><option value="B">Form B</option></select></div></div>
+
+          <!-- SECTION 1: COMPANY INFORMATION -->
+          <div class="section-divider"><span class="section-counter">1</span>Company Information</div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Company Name</label><input type="text" name="company_name" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Company Full Office Address</label><textarea name="company_office_address" rows="3" required></textarea></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Company Registration No.</label><input type="text" name="company_registration_no" required></div><div class="form-group"><label class="required">Company Tax Number</label><input type="text" name="company_tax_number" required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Company SSM No.</label><input type="text" name="company_ssm_no" required></div><div class="form-group"><label class="required">Company SST No.</label><input type="text" name="company_sst_no" required></div></div>
+
+          <!-- SECTION 2: CAR PARK SITE INFORMATION -->
+          <div class="section-divider"><span class="section-counter">2</span>Car Park Site Information</div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Car Park Site Name</label><input type="text" name="car_park_site_name" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Car Park Site Address</label><textarea name="car_park_site_address" rows="3" required></textarea></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Type of Car Park</label><div class="radio-checkbox-group"><div class="radio-checkbox-item"><input type="radio" name="car_park_type" value="Open Site" required><label>Open Site</label></div><div class="radio-checkbox-item"><input type="radio" name="car_park_type" value="Office Building"><label>Office Building</label></div><div class="radio-checkbox-item"><input type="radio" name="car_park_type" value="Commercial Building (Mall)"><label>Commercial Building (Mall)</label></div><div class="radio-checkbox-item"><input type="radio" name="car_park_type" value="Government Building"><label>Government Building</label></div><div class="radio-checkbox-item"><input type="radio" name="car_park_type" value="Hospital"><label>Hospital</label></div></div></div></div>
+
+          <!-- SECTION 3: CAR PARK CAPACITY -->
+          <div class="section-divider"><span class="section-counter">3</span>Car Park Capacity</div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">No. of Entry</label><input type="number" name="no_of_entry" min="1" required></div><div class="form-group"><label class="required">No. of Exit</label><input type="number" name="no_of_exit" min="1" required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">No. of Zone</label><input type="number" name="no_of_zone" min="1" required></div><div class="form-group"><label class="required">No. of Validator</label><input type="number" name="no_of_validator" min="0" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">No. of Parking Bays</label><input type="number" name="no_of_parking_bay" min="1" required></div></div>
+
+          <!-- SECTION 4: AUTHORIZED PERSON IN CHARGE (OFFICE) -->
+          <div class="section-divider"><span class="section-counter">4</span>Authorized Person in Charge (Office)</div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Name</label><input type="text" name="authorized_pic_office_name" required></div><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="authorized_pic_office_contact" required></div></div>
+
+          <!-- SECTION 5: AUTHORIZED PERSON IN CHARGE (SITE) -->
+          <div class="section-divider"><span class="section-counter">5</span>Authorized Person in Charge (Site)</div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Name</label><input type="text" name="authorized_pic_site_name" required></div><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="authorized_pic_site_contact" required></div></div>
+
+          <!-- SECTION 6: AUTHORIZED EMAIL -->
+          <div class="section-divider"><span class="section-counter">6</span>Authorized Email</div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Authorized Email</label><input type="email" name="authorized_email" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label>CC Email(s)</label><input type="email" name="authorized_email_cc" placeholder="Optional secondary email"></div></div>
+
+          <!-- SECTION 7: BANK DETAILS -->
+          <div class="section-divider"><span class="section-counter">7</span>Bank Details</div>
+          <div class="info-banner"><strong>Note:</strong> Bank account details should be the primary account for transactions.</div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Bank</label><input type="text" name="bank_name" required></div><div class="form-group"><label class="required">Bank Account Name</label><input type="text" name="bank_account_name" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Bank Account No.</label><input type="text" name="bank_account_number" required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Bank Address</label><textarea name="bank_address" rows="3" required></textarea></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Tax Number</label><input type="text" name="tax_number" required></div></div>
+          <div class="form-grid-full"><div class="radio-checkbox-item"><input type="checkbox" name="primary_active_bank_account" value="1" required><label class="required">Confirm this is the Primary &amp; Active Bank Account</label></div></div>
+
+          <!-- SECTION 8: COMMERCIAL MODE -->
+          <div class="section-divider"><span class="section-counter">8</span>Commercial Mode</div>
+          <div class="form-grid-full"><div class="radio-checkbox-group"><div class="radio-checkbox-item"><input type="radio" name="commercial_model" value="Outright Purchase (1 Year)" required><label>Outright Purchase (1 Year)</label></div><div class="radio-checkbox-item"><input type="radio" name="commercial_model" value="Lease-to-Own (3-5 years)"><label>Lease-to-Own (3-5 years)</label></div><div class="radio-checkbox-item"><input type="radio" name="commercial_model" value="Rent"><label>Rent</label></div></div></div>
+
+          <!-- SECTION 9: DECLARATION -->
+          <div class="section-divider"><span class="section-counter">9</span>Declaration</div>
+          <div class="form-grid-full"><div class="radio-checkbox-item"><input type="checkbox" name="declaration" value="1" required><label>I certify that the information provided is true and complete.</label></div></div>
+
+          <!-- SUBMIT BUTTONS -->
+          <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #E0E0E0; display: flex; gap: 15px; flex-wrap: wrap;">
+            <button type="submit" name="action" value="save" class="btn btn-primary" style="padding: 18px 50px; font-size: 18px;">Save Client</button>
+            <button type="submit" name="action" value="save_download" class="btn btn-success" style="padding: 18px 50px; font-size: 18px;">Save & Download Form</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  return htmlPage('Customer Onboarding Form', content, user);
+}
+
+function clientCreatedPage(clientId, tempPassword, companyName, clientDbId = null) {
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div style="text-align: center; padding: 20px;">
+          <h2 style="color: var(--color-neon-green);">&#10003; Client Created Successfully</h2>
+          <p style="font-size: 1.1em; margin: 30px 0;">Client account for <strong>${companyName}</strong> has been created.</p>
+
+          <div style="background: #FFF3CD; padding: 30px; border-radius: 8px; margin: 30px 0; border: 2px solid #FFC107;">
+            <h3 style="margin-bottom: 20px; color: #856404;">&#128274; Login Credentials (Share Securely with Client)</h3>
+            <div style="font-size: 1.2em;">
+              <p><strong>Client ID:</strong> <code style="background: var(--color-primary); color: var(--color-neon-green); padding: 8px 16px; border-radius: 4px; font-size: 1.1em;">${clientId}</code></p>
+              <p style="margin-top: 16px;"><strong>Temporary Password:</strong> <code style="background: var(--color-primary); color: var(--color-accent); padding: 8px 16px; border-radius: 4px; font-size: 1.1em;">${tempPassword}</code></p>
+            </div>
+          </div>
+
+          <div class="alert alert-warning">
+            <strong>&#9888; Important:</strong> Share the Client ID and Temporary Password with the client securely. The client <strong>must change their password</strong> after first login. The temporary password will not work after the password is changed.
+          </div>
+
+          <div style="margin-top: 30px;">
+            <a href="/admin" class="btn btn-primary">Back to Dashboard</a>
+            <a href="/admin/add-client" class="btn btn-secondary">Add Another Client</a>
+            ${clientDbId ? `<a href="/admin/client/${clientDbId}/download-onboarding-form" class="btn btn-success">Download Onboarding PDF</a>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  return htmlPage('Client Created', content, { role: 'admin' });
+}
+
+function adminClientDetail(client, submission, documents, status, formDef, user, onboarding = null, dueDiligenceData = null, dueDiligenceDocs = []) {
+  const formData = submission ? JSON.parse(submission.form_data || '{}') : {};
+  const onboardingData = onboarding || {};
+
+  const content = `
+    <style>
+      .info-section {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        border-left: 4px solid var(--color-neon-green);
+      }
+      .info-section h3 {
+        color: var(--color-neon-green);
+        margin: 0 0 20px 0;
+        font-size: 1.3em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+      }
+      .info-item {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .info-label {
+        font-size: 0.85em;
+        color: var(--color-text-muted);
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      .info-value {
+        color: var(--color-text);
+        font-size: 1.05em;
+        word-break: break-word;
+      }
+      .dd-card {
+        background: linear-gradient(135deg, #1e3a5f 0%, #16213e 100%);
+        border-radius: 12px;
+        padding: 30px;
+        margin: 25px 0;
+        border: 2px solid rgba(52, 152, 219, 0.3);
+      }
+      .dd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      .dd-title {
+        color: var(--color-sky-blue);
+        font-size: 1.5em;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dd-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .approval-section {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+      .approval-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+      .approval-buttons form {
+        flex: 1;
+        min-width: 200px;
+      }
+      .approval-buttons button {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.1em;
+        font-weight: 600;
+      }
+    </style>
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>📋 ${escapeHtml(client.company_name)}</h2>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="/admin/client/${client.id}/download-onboarding-form" class="btn btn-primary btn-sm">📄 Download Onboarding</a>
+            <a href="/admin" class="btn btn-secondary" style="padding: 12px 24px; font-size: 16px; color: #000; font-weight: 600;">← Back to Dashboard</a>
+          </div>
+        </div>
+        
+        <div class="alert alert-info">
+          <strong>Client ID:</strong> ${escapeHtml(client.client_id)} | 
+          <strong>Form Group:</strong> ${formDef.name} | 
+          <strong>Created:</strong> ${new Date(client.created_at).toLocaleDateString()}
+        </div>
+
+        <!-- Company Information -->
+        <div class="info-section">
+          <h3>🏢 Company Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Company Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Registration No.</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_registration_no || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Tax Number</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_tax_number || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">SSM No.</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_ssm_no || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">SST No.</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_sst_no || 'Not provided')}</div>
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <div class="info-label">Office Address</div>
+              <div class="info-value">${escapeHtml(onboardingData.company_office_address || 'Not provided')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Car Park Information -->
+        <div class="info-section">
+          <h3>🚗 Car Park Site Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Site Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.car_park_site_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Type</div>
+              <div class="info-value">${escapeHtml(onboardingData.car_park_type || 'Not provided')}</div>
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <div class="info-label">Site Address</div>
+              <div class="info-value">${escapeHtml(onboardingData.car_park_site_address || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Entry Points</div>
+              <div class="info-value">${escapeHtml(onboardingData.no_of_entry || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Exit Points</div>
+              <div class="info-value">${escapeHtml(onboardingData.no_of_exit || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Zones</div>
+              <div class="info-value">${escapeHtml(onboardingData.no_of_zone || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Validators</div>
+              <div class="info-value">${escapeHtml(onboardingData.no_of_validator || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Parking Bays</div>
+              <div class="info-value">${escapeHtml(onboardingData.no_of_parking_bay || 'Not provided')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="info-section">
+          <h3>👤 Authorized Contacts</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Office PIC Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_pic_office_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Office PIC Contact</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_pic_office_contact || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Site PIC Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_pic_site_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Site PIC Contact</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_pic_site_contact || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Primary Email</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_email || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">CC Email</div>
+              <div class="info-value">${escapeHtml(onboardingData.authorized_email_cc || 'Not provided')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Information -->
+        <div class="info-section">
+          <h3>💳 Banking Details</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Bank Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.bank_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Account Name</div>
+              <div class="info-value">${escapeHtml(onboardingData.bank_account_name || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Account Number</div>
+              <div class="info-value">${escapeHtml(onboardingData.bank_account_number || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Tax Number</div>
+              <div class="info-value">${escapeHtml(onboardingData.tax_number || 'Not provided')}</div>
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <div class="info-label">Bank Address</div>
+              <div class="info-value">${escapeHtml(onboardingData.bank_address || 'Not provided')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Primary Account Status</div>
+              <div class="info-value">${onboardingData.primary_active_bank_account === '1' ? '✓ Confirmed' : '✗ Not confirmed'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Commercial Model</div>
+              <div class="info-value">${escapeHtml(onboardingData.commercial_model || 'Not provided')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Due Diligence Section -->
+        ${dueDiligenceData ? `
+        <div class="dd-card">
+          <div class="dd-header">
+            <h2 class="dd-title">📝 Due Diligence Form</h2>
+            <div class="dd-actions">
+              ${dueDiligenceData.approval_status === 'approved' ? '<span class="badge badge-done" style="font-size: 1.1em; padding: 8px 16px;">✓ Approved</span>' : ''}
+              ${dueDiligenceData.approval_status === 'rejected' ? '<span class="badge badge-danger" style="font-size: 1.1em; padding: 8px 16px;">✗ Rejected</span>' : ''}
+              ${dueDiligenceData.approval_status === 'pending' ? '<span class="badge badge-pending" style="font-size: 1.1em; padding: 8px 16px;">⏳ Pending Review</span>' : ''}
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div style="flex: 1; min-width: 200px;">
+              <div class="info-label">Submission Status</div>
+              <div class="info-value">
+                ${dueDiligenceData.is_submitted ? '<span class="badge badge-submitted">✓ Submitted</span>' : '<span class="badge badge-pending">📝 Draft</span>'}
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="info-label">Submitted Date</div>
+              <div class="info-value">${dueDiligenceData.created_at ? new Date(dueDiligenceData.created_at).toLocaleDateString() : 'N/A'}</div>
+            </div>
+            ${dueDiligenceData.approval_date ? `
+            <div style="flex: 1; min-width: 200px;">
+              <div class="info-label">Review Date</div>
+              <div class="info-value">${new Date(dueDiligenceData.approval_date).toLocaleDateString()}</div>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <div class="info-label">Reviewed By</div>
+              <div class="info-value">${escapeHtml(dueDiligenceData.approval_by || 'N/A')}</div>
+            </div>
+            ` : ''}
+          </div>
+
+          ${dueDiligenceData.approval_status === 'rejected' && dueDiligenceData.rejection_reason ? `
+            <div class="alert alert-error" style="margin-top: 15px;">
+              <strong>Rejection Reason:</strong> ${escapeHtml(dueDiligenceData.rejection_reason)}
+            </div>
+          ` : ''}
+
+          <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <a href="/admin/client/${client.id}/due-diligence/download" class="btn btn-success btn-sm">📥 Download DOCX</a>
+            <a href="/admin/client/${client.id}/due-diligence/view" class="btn btn-primary btn-sm">👁️ View Details</a>
+          </div>
+
+          ${dueDiligenceDocs && dueDiligenceDocs.length > 0 ? `
+          <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.1);">
+            <h4 style="color: var(--color-sky-blue); margin-bottom: 15px;">📎 Uploaded Documents (${dueDiligenceDocs.length})</h4>
+            <div style="display: grid; gap: 12px;">
+              ${dueDiligenceDocs.map(doc => {
+                const docType = doc.document_type.replace(/_/g, ' ').toUpperCase();
+                const fileSize = (doc.file_size / 1024).toFixed(1);
+                const uploadDate = new Date(doc.uploaded_at).toLocaleDateString();
+                return `
+                  <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1);">
+                    <div>
+                      <strong style="color: var(--color-text); display: block; margin-bottom: 5px;">${docType}</strong>
+                      <span style="color: var(--color-text-muted); font-size: 0.9em;">${escapeHtml(doc.original_filename)} (${fileSize} KB)</span>
+                      <span style="color: var(--color-text-muted); font-size: 0.85em; display: block; margin-top: 3px;">Uploaded: ${uploadDate}</span>
+                    </div>
+                    <a href="/admin/client/${client.id}/due-diligence/download-document/${doc.id}" class="btn btn-primary btn-sm">Download</a>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${dueDiligenceData.is_submitted && dueDiligenceData.approval_status === 'pending' ? `
+          <div class="approval-section">
+            <h4 style="color: var(--color-neon-green); margin-top: 0;">Approval Actions</h4>
+            <p style="color: var(--color-text-muted); margin-bottom: 0;">Review the form and approve or reject with a reason:</p>
+            <div class="approval-buttons">
+              <form method="POST" action="/admin/client/${client.id}/due-diligence/approve">
+                <button type="submit" class="btn btn-success" onclick="return confirm('Approve this due diligence form?')">
+                  ✓ Approve Form
+                </button>
+              </form>
+              <form method="POST" action="/admin/client/${client.id}/due-diligence/reject" onsubmit="return handleReject(event)">
+                <button type="submit" class="btn btn-danger">
+                  ✗ Reject Form
+                </button>
+              </form>
+            </div>
+          </div>
+          <script>
+            function handleReject(event) {
+              event.preventDefault();
+              const reason = prompt('Please provide a reason for rejection:');
+              if (reason && reason.trim()) {
+                const form = event.target;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'rejection_reason';
+                input.value = reason.trim();
+                form.appendChild(input);
+                form.submit();
+              }
+              return false;
+            }
+          </script>
+          ` : ''}
+        </div>
+        ` : `
+        <div class="dd-card">
+          <div class="dd-header">
+            <h2 class="dd-title">📝 Due Diligence Form</h2>
+            <span class="badge badge-inactive" style="font-size: 1.1em; padding: 8px 16px;">Not Submitted</span>
+          </div>
+          <p style="color: var(--color-text-muted); margin: 0;">The client has not yet submitted their due diligence form.</p>
+        </div>
+        `}
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #E0E0E0;">
+          <form method="POST" action="/admin/client/${client.id}/delete" onsubmit="return confirm('Are you sure? This will delete all client data and documents.');">
+            <button type="submit" class="btn btn-danger btn-sm">🗑️ Delete Client</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+  return htmlPage('Client Details', content, user);
+}
+
+function dueDiligenceForm(client, formData, user, errors = null, clientId = null) {
+  const d = formData || {};
+  const submitted = !!d._submitted;
+  const approvalStatus = d._approval_status || 'pending';
+  const readOnly = submitted ? 'disabled' : '';
+  const formAction = '/client/due-diligence';
+
+  const val = (key) => escapeHtml(d[key] || '');
+  const chk = (key, opt) => {
+    const arr = Array.isArray(d[key]) ? d[key] : (d[key] ? [d[key]] : []);
+    return arr.includes(opt) ? 'checked' : '';
+  };
+  const radio = (key, val) => d[key] === val ? 'checked' : '';
+
+  const statusBadges = {
+    'pending': '<span class="badge badge-pending">Pending Review</span>',
+    'approved': '<span class="badge badge-done">Approved</span>',
+    'rejected': '<span class="badge badge-danger">Rejected</span>'
+  };
+
+  const content = `
+    <style>
+      .accordion-header {
+        background: var(--color-primary);
+        padding: 20px;
+        cursor: pointer;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+      }
+      .accordion-header:hover {
+        background: #1a1a2e;
+      }
+      .accordion-header h3 {
+        color: var(--color-neon-green);
+        margin: 0;
+        font-size: 1.3em;
+      }
+      .accordion-icon {
+        font-size: 1.5em;
+        color: var(--color-neon-green);
+        transition: transform 0.3s;
+      }
+      .accordion-icon.open {
+        transform: rotate(180deg);
+      }
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+      .accordion-content.open {
+        max-height: 10000px;
+        transition: max-height 0.5s ease-in;
+      }
+    </style>
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Due Diligence Form</h2>
+          <div>
+            ${submitted ? statusBadges[approvalStatus] || statusBadges['pending'] : '<span class="badge badge-pending">Draft</span>'}
+          </div>
+        </div>
+        ${errors ? `<div class="alert alert-error">${errors}</div>` : ''}
+        ${submitted && approvalStatus === 'approved' ? '<div class="alert alert-success"><strong>✓ Approved!</strong> Your due diligence form has been approved.</div>' : ''}
+        ${submitted && approvalStatus === 'rejected' ? '<div class="alert alert-error"><strong>✗ Rejected</strong> Your due diligence form was rejected. Please contact admin for details.</div>' : ''}
+        ${submitted && approvalStatus === 'pending' ? '<div class="alert alert-info"><strong>Under Review</strong> Your form has been submitted and is awaiting admin review.</div>' : ''}
+        
+        <div class="accordion-header" onclick="toggleAccordion('duediligence')">
+          <h3>📋 Due Diligence Form</h3>
+          <span class="accordion-icon" id="icon-duediligence">▼</span>
+        </div>
+        <div class="accordion-content open" id="content-duediligence">
+        <form method="POST" action="${formAction}" class="form-light">
+          <div class="section-divider"><span class="section-counter">1A</span>Company Details (for enterprise/partnership/Berhad or Sdn Bhd / Non-Enterprise (Individual))</div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Date of application</label><input type="date" name="date_of_application" value="${val('date_of_application')}" ${readOnly} required></div></div>
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Type of Business Relationship: Please tick (✓) whichever applicable</label>
+            <div class="radio-checkbox-group">
+              ${['Corporate Customer', 'Government', 'Merchant', 'Business Partner', 'Service Provider', 'Vendor', 'TNG Cashless Parking Provider'].map(opt => `
+                <div class="radio-checkbox-item"><input type="checkbox" name="business_relationship_type" value="${opt}" ${chk('business_relationship_type', opt)} ${readOnly}><label>${opt}</label></div>
+              `).join('')}
+            </div>
+          </div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Purpose of business relationship</label><textarea name="purpose_of_relationship" rows="2" ${readOnly} required>${val('purpose_of_relationship')}</textarea></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Company name</label><input type="text" name="company_name" value="${val('company_name')}" ${readOnly} required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Old Business Registration No. / Identification No.</label><input type="text" name="old_reg_no" value="${val('old_reg_no')}" ${readOnly}></div><div class="form-group"><label>New Business Registration No. / Identification No.</label><input type="text" name="new_reg_no" value="${val('new_reg_no')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Business Tax Identification No. (TIN)</label><input type="text" name="tin_no" value="${val('tin_no')}" ${readOnly}></div><div class="form-group"><label>SST Registration No.</label><input type="text" name="sst_reg_no" value="${val('sst_reg_no')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Date of Incorporation</label><input type="date" name="date_of_incorporation" value="${val('date_of_incorporation')}" ${readOnly}></div><div class="form-group"><label>Country of Incorporation</label><input type="text" name="country_of_incorporation" value="${val('country_of_incorporation')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="contact_number" value="${val('contact_number')}" ${readOnly} required></div><div class="form-group"><label class="required">Registered Address</label><textarea name="registered_address" rows="2" ${readOnly} required>${val('registered_address')}</textarea></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Business Address</label><textarea name="business_address" rows="2" ${readOnly}>${val('business_address')}</textarea></div><div class="form-group"><label>Nature of Business</label><input type="text" name="nature_of_business" value="${val('nature_of_business')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Business Email Address</label><input type="email" name="business_email" value="${val('business_email')}" ${readOnly} required></div><div class="form-group"><label class="required">Contact Email Address</label><input type="email" name="contact_email" value="${val('contact_email')}" ${readOnly} required></div></div>
+
+          <div class="section-divider"><span class="section-counter">1B</span>Company Structure</div>
+          <div class="form-grid-2"><div class="form-group">
+            <label class="required">Does your company have corporate shareholder(s)?</label>
+            <div class="radio-checkbox-group">
+              <div class="radio-checkbox-item"><input type="radio" name="has_corporate_shareholder" value="Yes" ${radio('has_corporate_shareholder', 'Yes')} ${readOnly} required><label>Yes</label></div>
+              <div class="radio-checkbox-item"><input type="radio" name="has_corporate_shareholder" value="No" ${radio('has_corporate_shareholder', 'No')} ${readOnly} required><label>No</label></div>
+            </div>
+          </div><div class="form-group">
+            <label>If Yes, please provide details</label>
+            <textarea name="corporate_shareholder_details" rows="2" ${readOnly}>${val('corporate_shareholder_details')}</textarea>
+          </div></div>
+          <div class="form-grid-2"><div class="form-group">
+            <label class="required">Is your company part of a corporate group of companies?</label>
+            <div class="radio-checkbox-group">
+              <div class="radio-checkbox-item"><input type="radio" name="is_corporate_group" value="Yes" ${radio('is_corporate_group', 'Yes')} ${readOnly} required><label>Yes (please provide company group structure)</label></div>
+              <div class="radio-checkbox-item"><input type="radio" name="is_corporate_group" value="No" ${radio('is_corporate_group', 'No')} ${readOnly} required><label>No</label></div>
+            </div>
+          </div><div class="form-group">
+            <label>If Yes, company group structure details</label>
+            <textarea name="group_structure_details" rows="3" ${readOnly}>${val('group_structure_details')}</textarea>
+          </div></div>
+
+          <div class="section-divider"><span class="section-counter">1C</span>Document required (*Mandatory form required)</div>
+          <div class="info-banner">
+            <p><strong>1. Enterprise/ Sole Proprietorship</strong></p>
+            <ul style="margin-top:8px; padding-left:20px;">
+              <li>Certificate of Registration (Form D) (if applicable)</li>
+              <li>Owner's NRIC</li>
+              <li>Information generated from public domain database e.g., CTOS, Experian etc.*</li>
+            </ul>
+            <p style="margin-top:12px;"><strong>2. Partnership</strong></p>
+            <ul style="margin-top:8px; padding-left:20px;">
+              <li>Partnership Agreement/Deeds</li>
+              <li>Partnership NRIC</li>
+            </ul>
+            <p style="margin-top:12px;"><strong>3. Company Limited by Shares (Bhd / Sdn Bhd)</strong></p>
+            <ul style="margin-top:8px; padding-left:20px;">
+              <li>Form 49 – Return Giving Particulars in Register of Directors, Managers, & Secretaries and Changes of Particulars</li>
+              <li>Public domain data e.g., CTOS, Experian, SSM*</li>
+            </ul>
+          </div>
+
+          ${!submitted ? `
+          <div style="background: rgba(0, 123, 255, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid rgba(0, 123, 255, 0.3);">
+            <h4 style="color: var(--color-sky-blue); margin-top: 0;">📎 Upload Required Documents</h4>
+            <p style="color: var(--color-text-muted); margin-bottom: 15px;">Please upload the required documents based on your business type. Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max 10MB per file)</p>
+            <div id="upload-section">
+              <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Select Document Type:</label>
+                <select id="doc-type-select" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                  <option value="">-- Select Document Type --</option>
+                  <option value="form_d">Certificate of Registration (Form D)</option>
+                  <option value="owner_nric">Owner's NRIC</option>
+                  <option value="ctos_report">CTOS/Experian Report</option>
+                  <option value="partnership_agreement">Partnership Agreement/Deeds</option>
+                  <option value="partnership_nric">Partnership NRIC</option>
+                  <option value="form_49">Form 49</option>
+                  <option value="ssm_data">SSM Data</option>
+                  <option value="other">Other Supporting Document</option>
+                </select>
+              </div>
+              <div style="margin-bottom: 15px;">
+                <input type="file" id="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: block; width: 100%; padding: 10px; border: 2px dashed #ccc; border-radius: 4px; background: white;">
+              </div>
+              <button type="button" onclick="uploadDocument()" class="btn btn-primary" style="width: 100%;">📤 Upload Document</button>
+              <div id="upload-status" style="margin-top: 10px;"></div>
+            </div>
+            <div id="uploaded-docs-list" style="margin-top: 20px;"></div>
+          </div>
+          ` : ''}
+
+          <script>
+            // Load existing documents on page load
+            ${!submitted ? `
+            window.addEventListener('DOMContentLoaded', function() {
+              loadUploadedDocuments();
+            });
+
+            function loadUploadedDocuments() {
+              fetch('/client/due-diligence/documents')
+                .then(res => res.json())
+                .then(docs => {
+                  displayUploadedDocuments(docs);
+                })
+                .catch(err => console.error('Error loading documents:', err));
+            }
+
+            function displayUploadedDocuments(docs) {
+              const container = document.getElementById('uploaded-docs-list');
+              if (!docs || docs.length === 0) {
+                container.innerHTML = '<p style="color: var(--color-text-muted); font-style: italic;">No documents uploaded yet.</p>';
+                return;
+              }
+
+              let html = '<h5 style="color: var(--color-neon-green); margin-bottom: 10px;">Uploaded Documents:</h5>';
+              docs.forEach(doc => {
+                const docType = doc.document_type.replace(/_/g, ' ').toUpperCase();
+                const fileSize = (doc.file_size / 1024).toFixed(1);
+                html += '<div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">';
+                html += '<div>';
+                html += '<strong style="color: var(--color-text);">' + docType + '</strong><br>';
+                html += '<span style="color: var(--color-text-muted); font-size: 0.9em;">' + doc.original_filename + ' (' + fileSize + ' KB)</span>';
+                html += '</div>';
+                html += '<button type="button" onclick="deleteDocument(' + doc.id + ')" class="btn btn-danger btn-sm">Delete</button>';
+                html += '</div>';
+              });
+              container.innerHTML = html;
+            }
+
+            function uploadDocument() {
+              const docType = document.getElementById('doc-type-select').value;
+              const fileInput = document.getElementById('doc-file-input');
+              const statusDiv = document.getElementById('upload-status');
+
+              if (!docType) {
+                statusDiv.innerHTML = '<div class="alert alert-error">Please select a document type</div>';
+                return;
+              }
+
+              if (!fileInput.files || fileInput.files.length === 0) {
+                statusDiv.innerHTML = '<div class="alert alert-error">Please select a file to upload</div>';
+                return;
+              }
+
+              const formData = new FormData();
+              formData.append('document', fileInput.files[0]);
+              formData.append('document_type', docType);
+
+              statusDiv.innerHTML = '<div class="alert alert-info">Uploading...</div>';
+
+              fetch('/client/due-diligence/upload-document', {
+                method: 'POST',
+                body: formData
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  statusDiv.innerHTML = '<div class="alert alert-success">✓ Document uploaded successfully!</div>';
+                  fileInput.value = '';
+                  document.getElementById('doc-type-select').value = '';
+                  loadUploadedDocuments();
+                  setTimeout(function() { statusDiv.innerHTML = ''; }, 3000);
+                } else {
+                  statusDiv.innerHTML = '<div class="alert alert-error">Error: ' + (data.error || 'Upload failed') + '</div>';
+                }
+              })
+              .catch(function(err) {
+                statusDiv.innerHTML = '<div class="alert alert-error">Error: ' + err.message + '</div>';
+              });
+            }
+
+            function deleteDocument(docId) {
+              if (!confirm('Delete this document?')) return;
+
+              fetch('/client/due-diligence/delete-document/' + docId, {
+                method: 'POST'
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  loadUploadedDocuments();
+                } else {
+                  alert('Error deleting document');
+                }
+              })
+              .catch(err => alert('Error: ' + err.message));
+            }
+            ` : ''}
+          </script>
+
+          <div class="section-divider"><span class="section-counter">1D</span>Source of fund – (Tick more than 1 if required)</div>
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Source of fund</label>
+            <div class="radio-checkbox-group">
+              ${['Sales profits', 'Capital injection', 'Borrowing (bank borrowing/ advances from shareholders)', 'Others'].map(opt => `
+                <div class="radio-checkbox-item"><input type="checkbox" name="source_of_fund" value="${opt}" ${chk('source_of_fund', opt)} ${readOnly}><label>${opt}</label></div>
+              `).join('')}
+            </div>
+            <label style="margin-top:12px; display:block;">If Others, please specify: <input type="text" name="source_of_fund_others" value="${val('source_of_fund_others')}" ${readOnly} style="margin-top:6px; width:100%;"></label>
+          </div></div>
+
+          <div class="section-divider"><span class="section-counter">2A</span>Other type of entity (Government/Club/Societies/Schools/Universities/Embassy etc)</div>
+          <div class="form-grid-full"><div class="form-group"><label>Entity name</label><input type="text" name="entity_name" value="${val('entity_name')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Registration No. (applicable only for other than government sector)</label><input type="text" name="entity_reg_no" value="${val('entity_reg_no')}" ${readOnly}></div><div class="form-group"><label>Tax Identification No. (TIN) (applicable only for other than government sector)</label><input type="text" name="entity_tin" value="${val('entity_tin')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>SST Registration No. (applicable only for other than government sector)</label><input type="text" name="entity_sst" value="${val('entity_sst')}" ${readOnly}></div><div class="form-group"><label>Date of Registration (applicable only for other than government sector)</label><input type="date" name="entity_date_registration" value="${val('entity_date_registration')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Country of Registration (applicable only for other than government sector)</label><input type="text" name="entity_country_registration" value="${val('entity_country_registration')}" ${readOnly}></div><div class="form-group"><label>Contact no.</label><input type="text" name="entity_contact_no" value="${val('entity_contact_no')}" ${readOnly}></div></div>
+          <div class="form-grid-full"><div class="form-group"><label>Registered Address/Business Address</label><textarea name="entity_registered_address" rows="2" ${readOnly}>${val('entity_registered_address')}</textarea></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Email Address</label><input type="email" name="entity_email" value="${val('entity_email')}" ${readOnly}></div><div class="form-group"><label>Contact Email Address</label><input type="email" name="entity_contact_email" value="${val('entity_contact_email')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Type of activity /function</label><input type="text" name="entity_activity_type" value="${val('entity_activity_type')}" ${readOnly}></div><div class="form-group"><label>Office Bearers / Officer-in-charge</label><textarea name="entity_office_bearers" rows="2" ${readOnly}>${val('entity_office_bearers')}</textarea></div></div>
+
+          <div class="section-divider"><span class="section-counter">D</span>Declaration</div>
+          <div class="info-banner"><p>*I, the undersigned hereby declare that all information submitted is correct to the best of my knowledge and there are no material omissions.</p></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Signature</label><input type="text" name="declaration_signature" value="${val('declaration_signature')}" ${readOnly} placeholder="Type name as signature" required></div><div class="form-group"><label class="required">Name</label><input type="text" name="declaration_name" value="${val('declaration_name')}" ${readOnly} required></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Designation</label><input type="text" name="declaration_designation" value="${val('declaration_designation')}" ${readOnly} required></div><div class="form-group"><label class="required">Date</label><input type="date" name="declaration_date" value="${val('declaration_date')}" ${readOnly} required></div></div>
+
+          <input type="hidden" name="_submitted" value="${submitted ? '1' : '0'}">
+
+          <div style="margin-top: 30px;">
+            ${!submitted ? '<button type="submit" class="btn btn-primary" name="action" value="save">Save Draft</button>' : ''}
+            ${!submitted ? '<button type="submit" class="btn btn-success" name="action" value="submit" style="margin-left: 10px;" onclick="return confirm(\'Are you sure? This will submit the form for review.\')">Submit</button>' : ''}
+            <input type="hidden" name="_submitted" value="${submitted ? '1' : '0'}">
+          </div>
+        </form>
+        </div>
+        
+        <script>
+          function toggleAccordion(id) {
+            const content = document.getElementById('content-' + id);
+            const icon = document.getElementById('icon-' + id);
+            
+            if (content.classList.contains('open')) {
+              content.classList.remove('open');
+              icon.classList.remove('open');
+            } else {
+              content.classList.add('open');
+              icon.classList.add('open');
+            }
+          }
+        </script>
+      </div>
+    </div>
+  `;
+  return htmlPage('Due Diligence Form', content, user, clientId);
+}
+
+function dueDiligenceList(submissions, user) {
+  const rows = submissions.map(s => {
+    const data = JSON.parse(s.form_data || '{}');
+    return `
+      <tr>
+        <td><strong>${escapeHtml(data.company_name || data.entity_name || '-')}</strong></td>
+        <td>${escapeHtml(s.client_id)}</td>
+        <td><span class="badge badge-${s.is_submitted ? 'submitted' : 'pending'}">${s.is_submitted ? 'Submitted' : 'Draft'}</span></td>
+        <td>${new Date(s.created_at).toLocaleDateString()}</td>
+        <td>
+          <a href="/admin/client/${s.client_id}" style="color: var(--color-sky-blue); text-decoration: none;">View</a>
+          &nbsp;
+          <a href="/admin/due-diligence/${s.id}/download" class="btn btn-success btn-sm">Download</a>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Due Diligence Forms</h2>
+          <a href="/admin" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Company / Entity Name</th>
+              <th>Client ID</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="5" style="text-align:center; color: var(--color-text);">No due diligence forms yet</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  return htmlPage('Due Diligence Forms', content, user);
+}
+
+function dueDiligenceApprovalView(client, dueDiligence, user) {
+  const d = JSON.parse(dueDiligence.form_data || '{}');
+  const val = (key) => escapeHtml(d[key] || 'N/A');
+  const approvalStatus = dueDiligence.approval_status || 'pending';
+  const statusBadge = {
+    'pending': '<span class="badge badge-pending">Pending Review</span>',
+    'approved': '<span class="badge badge-done">Approved</span>',
+    'rejected': '<span class="badge badge-danger">Rejected</span>'
+  }[approvalStatus];
+
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Due Diligence Form - Review & Approval</h2>
+          <div>
+            ${statusBadge}
+            <a href="/admin/client/${client.id}/due-diligence/download" class="btn btn-success btn-sm">Download DOCX</a>
+            <a href="/admin/client/${client.id}" class="btn btn-secondary btn-sm">Back to Client</a>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <strong>Client:</strong> ${escapeHtml(client.company_name)} (${escapeHtml(client.client_id)}) | 
+          <strong>Submitted:</strong> ${new Date(dueDiligence.created_at).toLocaleDateString()}
+          ${dueDiligence.approval_date ? ` | <strong>Last Updated:</strong> ${new Date(dueDiligence.approval_date).toLocaleDateString()}` : ''}
+        </div>
+
+        ${dueDiligence.approval_status === 'approved' ? `
+          <div class="alert alert-success">
+            <strong>✓ Approved</strong> by ${escapeHtml(dueDiligence.approval_by || 'Admin')} on ${new Date(dueDiligence.approval_date).toLocaleDateString()}
+          </div>
+        ` : ''}
+
+        ${dueDiligence.approval_status === 'rejected' ? `
+          <div class="alert alert-error">
+            <strong>✗ Rejected</strong> by ${escapeHtml(dueDiligence.approval_by || 'Admin')} on ${new Date(dueDiligence.approval_date).toLocaleDateString()}
+            ${dueDiligence.rejection_reason ? `<br><strong>Reason:</strong> ${escapeHtml(dueDiligence.rejection_reason)}` : ''}
+          </div>
+        ` : ''}
+
+        <h3 style="margin-top: 30px;">Form Data Summary</h3>
+        
+        <div class="section-divider">Part 1A: Company Details</div>
+        <div class="status-grid">
+          <div class="status-card"><h4>Company Name</h4><div class="status-value">${val('company_name')}</div></div>
+          <div class="status-card"><h4>Date of Application</h4><div class="status-value">${val('date_of_application')}</div></div>
+          <div class="status-card"><h4>Business Relationship Type</h4><div class="status-value">${val('business_relationship_type')}</div></div>
+          <div class="status-card"><h4>Registration No (New)</h4><div class="status-value">${val('new_reg_no')}</div></div>
+          <div class="status-card"><h4>TIN</h4><div class="status-value">${val('tin_no')}</div></div>
+          <div class="status-card"><h4>SST Reg No</h4><div class="status-value">${val('sst_reg_no')}</div></div>
+          <div class="status-card"><h4>Contact Number</h4><div class="status-value">${val('contact_number')}</div></div>
+          <div class="status-card"><h4>Business Email</h4><div class="status-value">${val('business_email')}</div></div>
+        </div>
+
+        <div class="section-divider">Part 1B: Company Structure</div>
+        <div class="status-grid">
+          <div class="status-card"><h4>Corporate Shareholder</h4><div class="status-value">${val('has_corporate_shareholder')}</div></div>
+          <div class="status-card"><h4>Corporate Group</h4><div class="status-value">${val('is_corporate_group')}</div></div>
+        </div>
+
+        <div class="section-divider">Part 1D: Source of Funds</div>
+        <div class="status-grid">
+          <div class="status-card"><h4>Source of Fund</h4><div class="status-value">${val('source_of_fund')}</div></div>
+        </div>
+
+        <div class="section-divider">Declaration</div>
+        <div class="status-grid">
+          <div class="status-card"><h4>Signature</h4><div class="status-value">${val('declaration_signature')}</div></div>
+          <div class="status-card"><h4>Name</h4><div class="status-value">${val('declaration_name')}</div></div>
+          <div class="status-card"><h4>Designation</h4><div class="status-value">${val('declaration_designation')}</div></div>
+          <div class="status-card"><h4>Date</h4><div class="status-value">${val('declaration_date')}</div></div>
+        </div>
+
+        ${approvalStatus === 'pending' ? `
+          <h3 style="margin-top: 40px;">Approval Actions</h3>
+          <div style="display: flex; gap: 20px; margin-top: 20px;">
+            <form method="POST" action="/admin/client/${client.id}/due-diligence/approve" style="flex: 1;">
+              <button type="submit" class="btn btn-success" style="width: 100%; padding: 20px; font-size: 18px;" onclick="return confirm('Approve this due diligence form?')">✓ Approve</button>
+            </form>
+            <form method="POST" action="/admin/client/${client.id}/due-diligence/reject" style="flex: 1;" onsubmit="return handleReject(event, ${client.id})">
+              <button type="submit" class="btn btn-danger" style="width: 100%; padding: 20px; font-size: 18px;">✗ Reject</button>
+            </form>
+          </div>
+          <script>
+            function handleReject(event, clientId) {
+              event.preventDefault();
+              const reason = prompt('Please provide a reason for rejection:');
+              if (reason && reason.trim()) {
+                const form = event.target;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'rejection_reason';
+                input.value = reason.trim();
+                form.appendChild(input);
+                form.submit();
+              }
+              return false;
+            }
+          </script>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  return htmlPage('Due Diligence Review', content, user);
+}
+
+module.exports = {
+  siteHeader,
+  htmlPage,
+  loginPage,
+  adminDashboard,
+  addClientPage,
+  clientCreatedPage,
+  adminClientDetail,
+  dueDiligenceForm,
+  dueDiligenceList,
+  dueDiligenceApprovalView,
+  helpRequestPage,
+  adminHelpPage,
+  adminHelpDetailPage
+};
+
+
+

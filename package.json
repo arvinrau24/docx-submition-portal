@@ -1,0 +1,38 @@
+{
+  "name": "web_agreement_docx",
+  "version": "1.0.0",
+  "description": "Secure document submission portal",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon --watch backend --watch frontend --ext js,css,html backend/server.js",
+    "check": "node --check backend/server.js && node --check backend/db.js && node --check frontend/views.js"
+  },
+  "keywords": [
+    "document-submission",
+    "portal"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "adm-zip": "^0.6.0",
+    "archiver": "^8.0.0",
+    "bcryptjs": "^3.0.3",
+    "docx": "^9.7.1",
+    "docxtemplater": "^3.69.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.3.0",
+    "multer": "^2.2.0",
+    "pdf-lib": "^1.17.1",
+    "sql.js": "^1.14.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "pdf-parse": "^2.4.5"
+  }
+}

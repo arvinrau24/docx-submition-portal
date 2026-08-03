@@ -1,0 +1,49 @@
+# Environment variables - NEVER commit secrets!
+.env
+
+# Dependencies
+node_modules/
+
+# Database files
+data/portal.db
+data/*.db
+
+# Uploads - contains sensitive client documents
+data/uploads/
+data/uploads/**/*
+
+# Audit logs - may contain sensitive information
+data/audit.log
+data/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# SSL certificates (if stored locally)
+*.pem
+*.key
+*.crt
+*.csr
+
+# PM2 logs
+.pm2/
+pm2.log

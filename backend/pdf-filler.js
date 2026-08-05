@@ -1,4 +1,5 @@
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle } = require('docx');
 const fs = require('fs');
 const path = require('path');
 
@@ -52,6 +53,21 @@ async function fillPdfTemplate(templatePath, fieldMappings, data, options = {}) 
     const page = pdfDoc.getPage(pageIndex);
 
     try {
+      // Draw a white rectangle over any printed placeholder text (e.g. the
+      // "SN00000" watermark in the header) before overlaying the real value.
+      if (mapping.whiteout) {
+        const { x: wx, y: wy, width, height } = mapping.whiteout;
+        page.drawRectangle({
+          x: wx,
+          y: wy,
+          width,
+          height,
+          color: rgb(1, 1, 1),
+          borderColor: rgb(1, 1, 1),
+          borderWidth: 0,
+        });
+      }
+
       if (type === 'checkbox') {
         // Draw an X only when the source value matches this specific box.
         // Plain checkboxes retain the conventional truthy-value behavior.
@@ -65,23 +81,40 @@ async function fillPdfTemplate(templatePath, fieldMappings, data, options = {}) 
           // is universally supported and clear inside the printed checkbox.
           page.drawText('X', { x, y, size, font: pdfFont, color });
         }
-      } else if (type === 'text' || type === 'textarea') {
-        // Draw text
-        const text = String(value);
-        
-        // Handle multiline text
-        if (type === 'textarea' || text.includes('\n')) {
-          const lines = text.split('\n');
-          let currentY = y;
-          lines.forEach(line => {
-            if (line.trim()) {
-              page.drawText(line, { x, y: currentY, size, font: pdfFont, color, maxWidth });
-            }
-            currentY -= size + 2; // Move to next line
-          });
-        } else {
-          page.drawText(text, { x, y, size, font: pdfFont, color, maxWidth });
-        }
+       } else if (type === 'text' || type === 'textarea') {
+         // Draw text
+         const text = String(value);
+         
+         // Calculate approximate characters per line based on font size and maxWidth
+         // For Helvetica, ~2 characters per 10 points of width at 9pt font
+         const charsPerLine = Math.floor((maxWidth / size) * 1.8);
+         
+         // Handle multiline text - split by newlines or when text exceeds maxWidth
+         let linesToDraw = [];
+         
+         if (type === 'textarea' || text.includes('\n')) {
+           // Already contains newlines, split by them
+           linesToDraw = text.split('\n');
+         } else if (charsPerLine > 0 && text.length > charsPerLine) {
+           // Text is too long for one line, wrap it
+           let remaining = text;
+           while (remaining.length > 0) {
+             linesToDraw.push(remaining.substring(0, charsPerLine));
+             remaining = remaining.substring(charsPerLine);
+           }
+         } else {
+           // Short text, single line
+           linesToDraw = [text];
+         }
+         
+         // Draw all lines
+         let currentY = y;
+         linesToDraw.forEach((line, index) => {
+           if (line.trim()) {
+             page.drawText(line, { x, y: currentY, size, font: pdfFont, color, maxWidth });
+           }
+           currentY -= size + 2; // Move to next line
+         });
       } else if (type === 'signature' && signatures[fieldName]) {
         // Draw signature image
         const imageDataUrl = signatures[fieldName];
@@ -144,7 +177,92 @@ function expandMultiValueFields(data, mappings) {
   return expanded;
 }
 
+/**
+ * Fill a DOCX template by creating a formatted document with data
+ * @param {Object} fieldMappings - Field definitions with coordinates { fieldName: { x, y, size, page, ... } }
+ * @param {Object} data - Data to fill (field name -> value mapping)
+ * @param {Object} options - Options for filling
+ * @returns {Promise<Buffer>} - Filled DOCX as buffer
+ */
+async function fillDocxTemplate(fieldMappings, data, options = {}) {
+  const {
+    signatures = {},
+    defaultSize = 10,
+  } = options;
+
+  // Build table rows from field mappings
+  const rows = [];
+  
+  // Add header row
+  rows.push(
+    new TableRow({
+      cells: [
+        new TableCell({
+          children: [new Paragraph({ text: 'Field Name', bold: true })],
+          width: { size: 30, type: WidthType.PERCENTAGE },
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: 'Value', bold: true })],
+          width: { size: 70, type: WidthType.PERCENTAGE },
+        }),
+      ],
+    })
+  );
+
+  // Add data rows
+  for (const [fieldName, mapping] of Object.entries(fieldMappings)) {
+    const value = data[mapping.source || fieldName];
+    
+    if (value === undefined || value === null || value === '') continue;
+
+    const displayValue = String(value);
+    const fieldLabel = fieldName
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    rows.push(
+      new TableRow({
+        cells: [
+          new TableCell({
+            children: [new Paragraph({ text: fieldLabel })],
+            width: { size: 30, type: WidthType.PERCENTAGE },
+          }),
+          new TableCell({
+            children: [new Paragraph({ text: displayValue })],
+            width: { size: 70, type: WidthType.PERCENTAGE },
+          }),
+        ],
+      })
+    );
+  }
+
+  // Create document
+  const doc = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            text: 'Form Submission',
+            bold: true,
+            size: 28,
+          }),
+          new Paragraph({ text: '' }),
+          new Table({
+            rows: rows,
+            width: { size: 100, type: WidthType.PERCENTAGE },
+          }),
+        ],
+      },
+    ],
+  });
+
+  // Generate buffer
+  const buffer = await Packer.toBuffer(doc);
+  return buffer;
+}
+
 module.exports = {
   fillPdfTemplate,
+  fillDocxTemplate,
   expandMultiValueFields
 };

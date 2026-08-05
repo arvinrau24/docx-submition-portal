@@ -12,7 +12,7 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { initDatabase, run, queryOne, queryAll, FORM_DEFINITIONS } = require('./db');
 const views = require('../frontend/views');
-const { fillPdfTemplate, expandMultiValueFields } = require('./pdf-filler');
+const { fillPdfTemplate, fillDocxTemplate, expandMultiValueFields } = require('./pdf-filler');
 const { getTemplate } = require('./template-defs');
 
 const app = express();
@@ -63,25 +63,6 @@ async function generateOnboardingPdf(client, onboarding) {
   return pdfBuffer;
 }
 
-async function generateDueDiligencePdf(client, data) {
-  const template = getTemplate('due_diligence');
-  const formData = expandMultiValueFields(data || {}, template.fields);
-  const signatures = {};
-  
-  // Extract signature from form data
-  if (formData.declaration_signature && formData.declaration_signature.startsWith('data:image')) {
-    signatures['declaration_signature'] = formData.declaration_signature;
-  }
-  
-  const pdfBuffer = await fillPdfTemplate(
-    template.file,
-    template.fields,
-    formData,
-    { signatures }
-  );
-  
-  return pdfBuffer;
-}
 
 // Security: Helmet - HTTP security headers
 app.use(helmet({
@@ -270,6 +251,15 @@ function requireAuth(role = null) {
 function sanitizeInput(str) {
   if (typeof str !== 'string') return '';
   return str.trim().slice(0, 500);
+}
+
+// Helper: Get today's date in DD/MM/YY format
+function getTodayDateFormatted() {
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const year = String(today.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
 }
 
 // Security: Path traversal protection
@@ -498,20 +488,20 @@ app.post('/admin/add-client', requireAuth('admin'), upload.none(), [
     counter++;
   }
 
-  const tempPassword = crypto.randomBytes(8).toString('hex');
-  const passwordHash = bcrypt.hashSync(tempPassword, 10);
+   const tempPassword = crypto.randomBytes(8).toString('hex');
+    const passwordHash = bcrypt.hashSync(tempPassword, 10);
 
-  const existingUser = queryOne('SELECT id FROM users WHERE username = ?', [clientId]);
-  if (existingUser) {
-    return res.send(views.addClientPage(req.session.user, 'Client ID already exists'));
-  }
+    const existingUser = queryOne('SELECT id FROM users WHERE username = ?', [clientId]);
+    if (existingUser) {
+      return res.send(views.addClientPage(req.session.user, 'Client ID already exists'));
+    }
 
-  run("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'client')", [clientId, passwordHash]);
-  const userId = queryOne('SELECT MAX(id) as id FROM users').id;
+    run("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'client')", [clientId, passwordHash]);
+    const userId = queryOne('SELECT MAX(id) as id FROM users').id;
 
-  run(`INSERT INTO clients (client_id, company_name, address, form_group, user_id, status) VALUES (?, ?, ?, ?, ?, 'active')`,
-    [clientId, sanitizedCompanyName, sanitizeInput(company_office_address), form_group, userId]);
-  const clientDbId = queryOne('SELECT MAX(id) as id FROM clients').id;
+    run(`INSERT INTO clients (client_id, company_name, address, form_group, user_id, status) VALUES (?, ?, ?, ?, ?, 'active')`,
+      [clientId, sanitizedCompanyName, sanitizeInput(company_office_address), form_group, userId]);
+   const clientDbId = queryOne('SELECT MAX(id) as id FROM clients').id;
 
   run(`INSERT INTO onboarding_data (
     client_id, company_name, company_office_address, company_registration_no,
@@ -540,35 +530,37 @@ app.post('/admin/add-client', requireAuth('admin'), upload.none(), [
   run("INSERT INTO form_submissions (client_id) VALUES (?)", [clientDbId]);
   run("INSERT INTO statuses (client_id) VALUES (?)", [clientDbId]);
 
-  const onboarding = {
-    company_name: sanitizedCompanyName,
-    company_office_address: company_office_address,
-    company_registration_no: company_registration_no,
-    company_tax_number: company_tax_number,
-    company_ssm_no: company_ssm_no,
-    company_sst_no: company_sst_no,
-    car_park_site_name: car_park_site_name,
-    car_park_site_address: car_park_site_address,
-    car_park_type: car_park_type,
-    no_of_entry: no_of_entry,
-    no_of_exit: no_of_exit,
-    no_of_zone: no_of_zone,
-    no_of_validator: no_of_validator,
-    no_of_parking_bay: no_of_parking_bay,
-    authorized_pic_office_name: authorized_pic_office_name,
-    authorized_pic_office_contact: authorized_pic_office_contact,
-    authorized_pic_site_name: authorized_pic_site_name,
-    authorized_pic_site_contact: authorized_pic_site_contact,
-    authorized_email: authorized_email,
-    authorized_email_cc: authorized_email_cc || '',
-    bank_name: bank_name,
-    bank_account_name: bank_account_name,
-    bank_account_number: bank_account_number,
-    bank_address: bank_address,
-    tax_number: tax_number,
-    primary_active_bank_account: primary_active_bank_account,
-    commercial_model: commercial_model
-  };
+   const onboarding = {
+     header_date0: getTodayDateFormatted(),
+     header_date1: getTodayDateFormatted(),
+     company_name: sanitizedCompanyName,
+     company_office_address: company_office_address,
+     company_registration_no: company_registration_no,
+     company_tax_number: company_tax_number,
+     company_ssm_no: company_ssm_no,
+     company_sst_no: company_sst_no,
+     car_park_site_name: car_park_site_name,
+     car_park_site_address: car_park_site_address,
+     car_park_type: car_park_type,
+     no_of_entry: no_of_entry,
+     no_of_exit: no_of_exit,
+     no_of_zone: no_of_zone,
+     no_of_validator: no_of_validator,
+     no_of_parking_bay: no_of_parking_bay,
+     authorized_pic_office_name: authorized_pic_office_name,
+     authorized_pic_office_contact: authorized_pic_office_contact,
+     authorized_pic_site_name: authorized_pic_site_name,
+     authorized_pic_site_contact: authorized_pic_site_contact,
+     authorized_email: authorized_email,
+     authorized_email_cc: authorized_email_cc || '',
+     bank_name: bank_name,
+     bank_account_name: bank_account_name,
+     bank_account_number: bank_account_number,
+     bank_address: bank_address,
+     tax_number: tax_number,
+     primary_active_bank_account: primary_active_bank_account,
+     commercial_model: commercial_model
+   };
 
   const buffer = await generateOnboardingPdf({ company_name: sanitizedCompanyName }, onboarding);
   const filename = `${clientId}_onboarding.pdf`;
@@ -773,14 +765,15 @@ app.get('/admin/client/:id/download-onboarding-form', requireAuth('admin'), asyn
 
   try {
     let buffer;
-    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-      const onboarding = queryOne('SELECT * FROM onboarding_data WHERE client_id = ?', [client.id]);
-      if (!onboarding) {
-        return res.status(404).send('Onboarding data not found. Please save client details first.');
-      }
-      buffer = await generateOnboardingPdf(client, onboarding);
-      fs.writeFileSync(filePath, buffer);
+    const onboarding = queryOne('SELECT * FROM onboarding_data WHERE client_id = ?', [client.id]);
+    if (!onboarding) {
+      return res.status(404).send('Onboarding data not found. Please save client details first.');
     }
+    // Always regenerate with today's date to ensure fresh timestamp
+    onboarding.header_date0 = getTodayDateFormatted();
+    onboarding.header_date1 = getTodayDateFormatted();
+    buffer = await generateOnboardingPdf(client, onboarding);
+    fs.writeFileSync(filePath, buffer);
 
     auditLog('ONBOARDING_DOWNLOAD', req.session.user.username, {
       clientId: client.client_id,
@@ -801,277 +794,54 @@ app.get('/admin/client/:id/download-onboarding-form', requireAuth('admin'), asyn
   }
 });
 
-// ============ DUE DILIGENCE ROUTES ============
+// ============ TEST ROUTES ============
 
-app.get('/client/due-diligence', requireAuth('client'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE user_id = ?', [req.session.user.id]);
-  if (!client) return res.redirect('/login');
-
-  const record = queryOne('SELECT * FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  const formData = record ? JSON.parse(record.form_data || '{}') : {};
-  formData._submitted = record ? !!record.is_submitted : false;
-  formData._approval_status = record ? record.approval_status : 'pending';
-
-  res.send(views.dueDiligenceForm(client, formData, req.session.user, null, client.client_id));
-});
-
-app.post('/client/due-diligence', requireAuth('client'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE user_id = ?', [req.session.user.id]);
-  if (!client) return res.redirect('/login');
-
-  // Determine if this is a submission or just a save
-  const action = req.body.action || 'save';
-  const isSubmitted = action === 'submit' ? 1 : 0;
-
-  const formData = {
-    ...req.body,
-    _submitted: isSubmitted
+// Test: Download sample onboarding form with test data
+app.get('/test/download-sample-onboarding', async (req, res) => {
+  const testData = {
+    company_name: 'TEST COMPANY PLC',
+    company_office_address: '123 Test Street, Test City, 50000 Kuala Lumpur',
+    company_registration_no: 'SSM001234567',
+    company_tax_number: 'CT1234567890',
+    company_ssm_no: 'SSM001234567',
+    company_sst_no: 'SST1234567890',
+    car_park_site_name: 'Test Car Park Site',
+    car_park_site_address: '456 Parking Avenue, Test District, 60000 Kuala Lumpur',
+    car_park_type: 'Office Building',
+    no_of_entry: '2',
+    no_of_exit: '2',
+    no_of_zone: '5',
+    no_of_validator: '8',
+    no_of_parking_bay: '150',
+    authorized_pic_office_name: 'John Test',
+    authorized_pic_office_contact: '+60123456789',
+    authorized_pic_site_name: 'Jane Test',
+    authorized_pic_site_contact: '+60187654321',
+    authorized_email: 'john@testcompany.com',
+    authorized_email_cc: 'jane@testcompany.com',
+    bank_name: 'Test Bank Malaysia',
+    bank_account_name: 'TEST COMPANY PLC',
+    bank_account_number: '123456789012',
+    bank_address: '789 Banking Road, Financial District, 50000 Kuala Lumpur',
+    primary_active_bank_account: '1',
+    commercial_model: 'Office Building',
+    declaration_signature: 'John Test',
+    declaration_name: 'John Test',
+    declaration_date: '2026-08-04'
   };
 
-  // Remove action from stored data as it's not part of the form
-  delete formData.action;
-
-  const existing = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  if (existing) {
-    run('UPDATE due_diligence_forms SET form_data = ?, is_submitted = ?, updated_at = datetime(\'now\') WHERE id = ?',
-      [JSON.stringify(formData), isSubmitted, existing.id]);
-  } else {
-    run('INSERT INTO due_diligence_forms (client_id, form_data, is_submitted) VALUES (?, ?, ?)',
-      [client.id, JSON.stringify(formData), isSubmitted]);
-  }
-
-  auditLog('DUE_DILIGENCE_SAVED', req.session.user.username, {
-    clientId: client.client_id,
-    action: action,
-    submitted: !!isSubmitted
-  });
-
-  res.redirect('/client/due-diligence');
-});
-
-// Get client's uploaded due diligence documents
-app.get('/client/due-diligence/documents', requireAuth('client'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE user_id = ?', [req.session.user.id]);
-  if (!client) return res.json([]);
-
-  const dueDiligence = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  if (!dueDiligence) return res.json([]);
-
-  const documents = queryAll('SELECT * FROM due_diligence_documents WHERE due_diligence_id = ? ORDER BY uploaded_at DESC', [dueDiligence.id]);
-  res.json(documents);
-});
-
-// Upload due diligence document
-app.post('/client/due-diligence/upload-document', requireAuth('client'), uploadLimiter, (req, res) => {
-  upload.single('document')(req, res, (err) => {
-    // Handle multer errors
-    if (err) {
-      console.error('Upload error:', err);
-      return res.json({ success: false, error: err.message || 'Upload failed' });
-    }
-
-    try {
-      const client = queryOne('SELECT * FROM clients WHERE user_id = ?', [req.session.user.id]);
-      if (!client) return res.json({ success: false, error: 'Client not found' });
-
-      if (!req.file) return res.json({ success: false, error: 'No file uploaded' });
-
-      const documentType = req.body.document_type;
-      if (!documentType) return res.json({ success: false, error: 'Document type required' });
-
-      // Get or create due diligence record
-      let dueDiligence = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-      if (!dueDiligence) {
-        run('INSERT INTO due_diligence_forms (client_id, form_data, is_submitted) VALUES (?, \'{}\', 0)', [client.id]);
-        dueDiligence = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-      }
-
-      // Save document record
-      run(`INSERT INTO due_diligence_documents (due_diligence_id, document_type, original_filename, stored_filename, file_size, mime_type)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-        [dueDiligence.id, documentType, req.file.originalname, req.file.filename, req.file.size, req.file.mimetype]);
-
-      auditLog('DD_DOCUMENT_UPLOADED', req.session.user.username, {
-        clientId: client.client_id,
-        documentType: documentType,
-        filename: req.file.originalname
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Document upload error:', error);
-      res.json({ success: false, error: 'An error occurred during upload' });
-    }
-  });
-});
-
-// Delete due diligence document
-app.post('/client/due-diligence/delete-document/:docId', requireAuth('client'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE user_id = ?', [req.session.user.id]);
-  if (!client) return res.json({ success: false, error: 'Client not found' });
-
-  const dueDiligence = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  if (!dueDiligence) return res.json({ success: false, error: 'Due diligence not found' });
-
-  const doc = queryOne('SELECT * FROM due_diligence_documents WHERE id = ? AND due_diligence_id = ?', 
-    [req.params.docId, dueDiligence.id]);
-  if (!doc) return res.json({ success: false, error: 'Document not found' });
-
-  // Delete file from disk
-  const filePath = path.join(UPLOAD_DIR, doc.stored_filename);
-  const normalizedPath = path.normalize(filePath);
-  if (normalizedPath.startsWith(UPLOAD_DIR) && fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-
-  // Delete database record
-  run('DELETE FROM due_diligence_documents WHERE id = ?', [doc.id]);
-
-  auditLog('DD_DOCUMENT_DELETED', req.session.user.username, {
-    clientId: client.client_id,
-    documentType: doc.document_type
-  });
-
-  res.json({ success: true });
-});
-
-app.get('/admin/due-diligence', requireAuth('admin'), (req, res) => {
-  const submissions = queryAll(`
-    SELECT d.*, c.company_name, c.client_id, u.username
-    FROM due_diligence_forms d
-    JOIN clients c ON d.client_id = c.id
-    LEFT JOIN users u ON c.user_id = u.id
-    ORDER BY d.created_at DESC
-  `);
-  res.send(views.dueDiligenceList(submissions, req.session.user));
-});
-
-app.get('/admin/due-diligence/:id/download', requireAuth('admin'), async (req, res) => {
-  const record = queryOne(`
-    SELECT d.*, c.company_name, c.client_id
-    FROM due_diligence_forms d
-    JOIN clients c ON d.client_id = c.id
-    WHERE d.id = ?
-  `, [req.params.id]);
-  if (!record) return res.status(404).send('Due diligence form not found');
-
-  const data = JSON.parse(record.form_data || '{}');
-  const client = { company_name: record.company_name, client_id: record.client_id };
-
   try {
-    const buffer = await generateDueDiligencePdf(client, data);
-    const safeName = (record.company_name || record.client_id || 'client').replace(/[^a-zA-Z0-9]/g, '_');
+    const buffer = await generateOnboardingPdf({ company_name: 'TEST COMPANY' }, testData);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${safeName}_Due_Diligence.pdf"`);
+    res.setHeader('Content-Disposition', 'attachment; filename="Test_Onboarding_Form_Coordinate_Check.pdf"');
     res.send(buffer);
+    console.log('✅ Test onboarding PDF generated and downloaded');
   } catch (err) {
-    console.error('Due diligence download error:', err);
-    res.status(500).send('An internal server error occurred');
+    console.error('Test download error:', err);
+    res.status(500).send('Error generating test PDF: ' + err.message);
   }
 });
 
-app.get('/admin/client/:id/due-diligence/download', requireAuth('admin'), async (req, res) => {
-  const record = queryOne('SELECT * FROM due_diligence_forms WHERE client_id = ?', [req.params.id]);
-  if (!record) return res.status(404).send('Due diligence form not found');
-
-  const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
-  const data = JSON.parse(record.form_data || '{}');
-  const c = { company_name: client.company_name, client_id: client.client_id };
-
-  try {
-    const buffer = await generateDueDiligencePdf(c, data);
-    const safeName = (client.company_name || client.client_id || 'client').replace(/[^a-zA-Z0-9]/g, '_');
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${safeName}_Due_Diligence.pdf"`);
-    res.send(buffer);
-  } catch (err) {
-    console.error('Due diligence download error:', err);
-    res.status(500).send('An internal server error occurred');
-  }
-});
-
-app.get('/admin/client/:id/due-diligence/view', requireAuth('admin'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
-  if (!client) return res.redirect('/admin');
-  
-  const dueDiligence = queryOne('SELECT * FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  if (!dueDiligence) return res.status(404).send('Due diligence form not found');
-  
-  res.send(views.dueDiligenceApprovalView(client, dueDiligence, req.session.user));
-});
-
-app.post('/admin/client/:id/due-diligence/approve', requireAuth('admin'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
-  if (!client) return res.redirect('/admin');
-  
-  run(`UPDATE due_diligence_forms 
-       SET approval_status = 'approved', approval_date = datetime('now'), approval_by = ?
-       WHERE client_id = ?`, [req.session.user.username, client.id]);
-  
-  auditLog('DUE_DILIGENCE_APPROVED', req.session.user.username, {
-    clientId: client.client_id,
-    companyName: client.company_name
-  });
-  
-  res.redirect(`/admin/client/${client.id}/due-diligence/view`);
-});
-
-app.post('/admin/client/:id/due-diligence/reject', requireAuth('admin'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
-  if (!client) return res.redirect('/admin');
-  
-  const reason = req.body.rejection_reason || '';
-  
-  run(`UPDATE due_diligence_forms 
-       SET approval_status = 'rejected', approval_date = datetime('now'), 
-           approval_by = ?, rejection_reason = ?
-       WHERE client_id = ?`, [req.session.user.username, reason, client.id]);
-  
-  auditLog('DUE_DILIGENCE_REJECTED', req.session.user.username, {
-    clientId: client.client_id,
-    companyName: client.company_name,
-    reason: reason
-  });
-  
-  res.redirect(`/admin/client/${client.id}/due-diligence/view`);
-});
-
-// Download individual due diligence document
-app.get('/admin/client/:id/due-diligence/download-document/:docId', requireAuth('admin'), (req, res) => {
-  const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
-  if (!client) return res.status(404).send('Client not found');
-
-  const dueDiligence = queryOne('SELECT id FROM due_diligence_forms WHERE client_id = ?', [client.id]);
-  if (!dueDiligence) return res.status(404).send('Due diligence not found');
-
-  const doc = queryOne('SELECT * FROM due_diligence_documents WHERE id = ? AND due_diligence_id = ?',
-    [req.params.docId, dueDiligence.id]);
-  if (!doc) return res.status(404).send('Document not found');
-
-  const filePath = path.join(UPLOAD_DIR, doc.stored_filename);
-  const normalizedPath = path.normalize(filePath);
-
-  if (!normalizedPath.startsWith(UPLOAD_DIR)) {
-    auditLog('DIRECTORY_TRAVERSAL_ATTEMPT', req.session.user.username, {
-      docId: req.params.docId,
-      clientId: client.id,
-      attemptedPath: filePath
-    });
-    return res.status(403).send('Access denied');
-  }
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('File not found on disk');
-  }
-
-  auditLog('DD_DOCUMENT_DOWNLOAD', req.session.user.username, {
-    clientId: client.client_id,
-    documentType: doc.document_type,
-    filename: doc.original_filename
-  });
-
-  res.download(filePath, doc.original_filename);
-});
 
 // ============ ERROR HANDLER ============
 

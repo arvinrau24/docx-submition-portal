@@ -86,23 +86,23 @@ async function initDatabase() {
     )
   `);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS clients (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      client_id TEXT UNIQUE NOT NULL,
-      company_name TEXT NOT NULL,
-      address TEXT,
-      pic_name TEXT,
-      email TEXT,
-      ssm_number TEXT,
-      phone TEXT,
-      form_group TEXT NOT NULL CHECK(form_group IN ('A', 'B')),
-      user_id INTEGER UNIQUE,
-      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    )
-  `);
+   db.run(`
+     CREATE TABLE IF NOT EXISTS clients (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       client_id TEXT UNIQUE NOT NULL,
+       company_name TEXT NOT NULL,
+       address TEXT,
+       pic_name TEXT,
+       email TEXT,
+       ssm_number TEXT,
+       phone TEXT,
+       form_group TEXT NOT NULL CHECK(form_group IN ('A', 'B')),
+       user_id INTEGER UNIQUE,
+       status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+     )
+   `);
 
    // New onboarding_data table for comprehensive client information
    db.run(`

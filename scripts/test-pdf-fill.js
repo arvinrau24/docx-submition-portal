@@ -19,6 +19,8 @@ async function testOnboardingForm() {
   
   // Sample data matching your form fields
   const sampleData = {
+    serial_number: 'SN00001',
+    header_date: '03/08/2026',
     company_name: 'ABC Parking Solutions Sdn Bhd',
     company_office_address: '123 Jalan Technology, Cyberjaya, Selangor 63000, Malaysia',
     company_registration_no: '201901234567',

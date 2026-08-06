@@ -262,6 +262,7 @@ function getTodayDateFormatted() {
   return `${day}/${month}/${year}`;
 }
 
+
 // Security: Path traversal protection
 function validateAndGetDocument(docId, clientId, userId) {
   const doc = queryOne('SELECT * FROM documents WHERE id = ? AND client_id = ?', [docId, clientId]);
@@ -681,20 +682,21 @@ app.post('/admin/client/:id/status', requireAuth('admin'), [
 });
 
 app.get('/admin/client/:id/download/:docId', requireAuth('admin'), (req, res) => {
-  const result = validateAndGetDocument(req.params.docId, req.params.id, req.session.user.username);
-  if (!result) return res.status(404).send('Document not found');
+   const result = validateAndGetDocument(req.params.docId, req.params.id, req.session.user.username);
+   if (!result) return res.status(404).send('Document not found');
 
-  const client = queryOne('SELECT company_name FROM clients WHERE id = ?', [req.params.id]);
-  const ext = path.extname(result.doc.original_filename);
-  const safeName = client.company_name.replace(/[^a-zA-Z0-9]/g, '_');
-  const downloadName = `${safeName}_${result.doc.document_type}${ext}`;
+   const client = queryOne('SELECT c.company_name, o.car_park_site_name FROM clients c LEFT JOIN onboarding_data o ON o.client_id = c.id WHERE c.id = ?', [req.params.id]);
+   const ext = path.extname(result.doc.original_filename);
+   const companyName = (client.company_name || 'Company').replace(/[^a-zA-Z0-9]/g, '_');
+   const siteName = (client.car_park_site_name || 'Site').replace(/[^a-zA-Z0-9]/g, '_');
+   const downloadName = `${companyName}_${siteName}${ext}`;
 
-  auditLog('DOC_DOWNLOAD', req.session.user.username, {
-    client: client.company_name,
-    docType: result.doc.document_type
-  });
+   auditLog('DOC_DOWNLOAD', req.session.user.username, {
+     client: client.company_name,
+     docType: result.doc.document_type
+   });
 
-  res.download(result.filePath, downloadName);
+   res.download(result.filePath, downloadName);
 });
 
 app.get('/admin/client/:id/download-all', requireAuth('admin'), (req, res) => {
@@ -760,7 +762,6 @@ app.get('/admin/client/:id/download-onboarding-form', requireAuth('admin'), asyn
   const client = queryOne('SELECT * FROM clients WHERE id = ?', [req.params.id]);
   if (!client) return res.redirect('/admin');
 
-  const safeName = (client.company_name || 'client').replace(/[^a-zA-Z0-9]/g, '_');
   const filePath = path.join(UPLOAD_DIR, `${client.client_id}_onboarding.pdf`);
 
   try {
@@ -775,12 +776,18 @@ app.get('/admin/client/:id/download-onboarding-form', requireAuth('admin'), asyn
     buffer = await generateOnboardingPdf(client, onboarding);
     fs.writeFileSync(filePath, buffer);
 
+    // Create filename as CompanyName_SiteName
+    const companyName = (onboarding.company_name || 'Company').replace(/[^a-zA-Z0-9]/g, '_');
+    const siteName = (onboarding.car_park_site_name || 'Site').replace(/[^a-zA-Z0-9]/g, '_');
+    const downloadFileName = `${companyName}_${siteName}.pdf`;
+
     auditLog('ONBOARDING_DOWNLOAD', req.session.user.username, {
       clientId: client.client_id,
-      companyName: client.company_name
+      companyName: client.company_name,
+      fileName: downloadFileName
     });
 
-    res.download(filePath, `${safeName}_Onboarding_Form.pdf`, (err) => {
+    res.download(filePath, downloadFileName, (err) => {
       if (err) {
         console.error('Download error:', err);
         if (!res.headersSent) {

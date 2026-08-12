@@ -733,6 +733,11 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
     'rejected': '<span class="badge badge-danger">Rejected</span>'
   };
 
+  // Determine if Part 1 or Part 2 should be shown
+  const showPart1 = d.entity_type_selection !== 'part2' && !submitted;
+  const showPart2 = d.entity_type_selection === 'part2' && !submitted;
+  const showBoth = submitted; // When viewing submitted form, show what was filled
+
   const content = `
     <style>
       .accordion-header {
@@ -779,6 +784,7 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
           <div>
             ${submitted ? statusBadges[approvalStatus] || statusBadges['pending'] : '<span class="badge badge-pending">Draft</span>'}
           </div>
+        ${passwordChangeBanner(user)}
         </div>
         ${errors ? `<div class="alert alert-error">${errors}</div>` : ''}
         ${submitted && approvalStatus === 'approved' ? '<div class="alert alert-success"><strong>✓ Approved!</strong> Your due diligence form has been approved.</div>' : ''}
@@ -791,17 +797,13 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
         </div>
         <div class="accordion-content open" id="content-duediligence">
         <form method="POST" action="${formAction}" class="form-light">
-          <div class="section-divider"><span class="section-counter">1A</span>Company Details (for enterprise/partnership/Berhad or Sdn Bhd / Non-Enterprise (Individual))</div>
+           ${!submitted ? `
+           <div class="section-divider"><span class="section-counter">0</span>Entity Type Selection</div>
+           <div class="form-grid-full" style="background: rgba(76, 175, 80, 0.05); padding: 20px; border-radius: 8px; border: 2px solid rgba(76, 175, 80, 0.3); margin-bottom: 20px;"><div class="form-group"><label class="required">Which type of entity are you?</label><div class="radio-checkbox-group"><div class="radio-checkbox-item"><input type="radio" id="ep1" name="entity_type_selection" value="part1" ${radio('entity_type_selection', 'part1')} required onchange="document.getElementById('p1').style.display='block';document.getElementById('p2').style.display='none';"><label><strong>Part 1: Enterprise/Partnership/Company/Individual</strong></label></div><div class="radio-checkbox-item"><input type="radio" id="ep2" name="entity_type_selection" value="part2" ${radio('entity_type_selection', 'part2')} required onchange="document.getElementById('p1').style.display='none';document.getElementById('p2').style.display='block';"><label><strong>Part 2: Other Entity (Government/Club/Societies/School/University/Embassy)</strong></label></div></div></div></div>
+           ` : ''}
+           <div id="p1" style="display: ${showPart1 ? 'block' : 'none'};">
+           <div class="section-divider"><span class="section-counter">1A</span>Company Details (for enterprise/partnership/Berhad or Sdn Bhd / Non-Enterprise (Individual))</div>
           <div class="form-grid-full"><div class="form-group"><label class="required">Date of application</label><input type="date" name="date_of_application" value="${val('date_of_application')}" ${readOnly} required></div></div>
-          <div class="form-grid-full"><div class="form-group">
-            <label class="required">Type of Business Relationship: Please tick (✓) whichever applicable</label>
-            <div class="radio-checkbox-group">
-              ${['Corporate Customer', 'Government', 'Merchant', 'Business Partner', 'Service Provider', 'Vendor', 'TNG Cashless Parking Provider'].map(opt => `
-                <div class="radio-checkbox-item"><input type="checkbox" name="business_relationship_type" value="${opt}" ${chk('business_relationship_type', opt)} ${readOnly}><label>${opt}</label></div>
-              `).join('')}
-            </div>
-          </div></div>
-          <div class="form-grid-full"><div class="form-group"><label class="required">Purpose of business relationship</label><textarea name="purpose_of_relationship" rows="2" ${readOnly} required>${val('purpose_of_relationship')}</textarea></div></div>
           <div class="form-grid-full"><div class="form-group"><label class="required">Company name</label><input type="text" name="company_name" value="${val('company_name')}" ${readOnly} required></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Old Business Registration No. / Identification No.</label><input type="text" name="old_reg_no" value="${val('old_reg_no')}" ${readOnly}></div><div class="form-group"><label>New Business Registration No. / Identification No.</label><input type="text" name="new_reg_no" value="${val('new_reg_no')}" ${readOnly}></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Business Tax Identification No. (TIN)</label><input type="text" name="tin_no" value="${val('tin_no')}" ${readOnly}></div><div class="form-group"><label>SST Registration No.</label><input type="text" name="sst_reg_no" value="${val('sst_reg_no')}" ${readOnly}></div></div>
@@ -809,6 +811,8 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
           <div class="form-grid-2"><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="contact_number" value="${val('contact_number')}" ${readOnly} required></div><div class="form-group"><label class="required">Registered Address</label><textarea name="registered_address" rows="2" ${readOnly} required>${val('registered_address')}</textarea></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Business Address</label><textarea name="business_address" rows="2" ${readOnly}>${val('business_address')}</textarea></div><div class="form-group"><label>Nature of Business</label><input type="text" name="nature_of_business" value="${val('nature_of_business')}" ${readOnly}></div></div>
           <div class="form-grid-2"><div class="form-group"><label class="required">Business Email Address</label><input type="email" name="business_email" value="${val('business_email')}" ${readOnly} required></div><div class="form-group"><label class="required">Contact Email Address</label><input type="email" name="contact_email" value="${val('contact_email')}" ${readOnly} required></div></div>
+
+          
 
           <div class="section-divider"><span class="section-counter">1B</span>Company Structure</div>
           <div class="form-grid-2"><div class="form-group">
@@ -832,97 +836,119 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
             <textarea name="group_structure_details" rows="3" ${readOnly}>${val('group_structure_details')}</textarea>
           </div></div>
 
-          <div class="section-divider"><span class="section-counter">1C</span>Document required (*Mandatory form required)</div>
+          <div class="section-divider"><span class="section-counter">1C</span>Supporting Documents Upload (*Mandatory)</div>
           <div class="info-banner">
-            <p><strong>1. Enterprise/ Sole Proprietorship</strong></p>
+            <p><strong>Required Documents by Business Type:</strong></p>
+            <p style="margin-top:8px;"><strong>1. Enterprise / Sole Proprietorship:</strong></p>
             <ul style="margin-top:8px; padding-left:20px;">
               <li>Certificate of Registration (Form D) (if applicable)</li>
               <li>Owner's NRIC</li>
-              <li>Information generated from public domain database e.g., CTOS, Experian etc.*</li>
+              <li>Information generated from public domain database (CTOS, Experian, etc.)*</li>
             </ul>
-            <p style="margin-top:12px;"><strong>2. Partnership</strong></p>
+            <p style="margin-top:12px;"><strong>2. Partnership:</strong></p>
             <ul style="margin-top:8px; padding-left:20px;">
               <li>Partnership Agreement/Deeds</li>
               <li>Partnership NRIC</li>
             </ul>
-            <p style="margin-top:12px;"><strong>3. Company Limited by Shares (Bhd / Sdn Bhd)</strong></p>
+            <p style="margin-top:12px;"><strong>3. Company Limited by Shares (Bhd / Sdn Bhd):</strong></p>
             <ul style="margin-top:8px; padding-left:20px;">
-              <li>Form 49 – Return Giving Particulars in Register of Directors, Managers, & Secretaries and Changes of Particulars</li>
-              <li>Public domain data e.g., CTOS, Experian, SSM*</li>
+              <li>Form 49 – Return Giving Particulars in Register of Directors, Managers, & Secretaries</li>
+              <li>Public domain data (CTOS, Experian, SSM, etc.)*</li>
             </ul>
           </div>
 
           ${!submitted ? `
-          <div style="background: rgba(0, 123, 255, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid rgba(0, 123, 255, 0.3);">
-            <h4 style="color: var(--color-sky-blue); margin-top: 0;">📎 Upload Required Documents</h4>
-            <p style="color: var(--color-text-muted); margin-bottom: 15px;">Please upload the required documents based on your business type. Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max 10MB per file)</p>
-            <div id="upload-section">
+          <div style="background: rgba(76, 175, 80, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid rgba(76, 175, 80, 0.3);">
+            <h4 style="color: #4CAF50; margin-top: 0;">📎 Upload Supporting Documents (Part 1C)</h4>
+            <p style="color: var(--color-text-muted); margin-bottom: 15px;">Upload all required supporting documents below. Once uploaded, our admin team will review and approve them. You will be notified when they are approved or if revisions are needed.</p>
+            <div id="part1c-upload-section">
               <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Select Document Type:</label>
-                <select id="doc-type-select" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Document Type:</label>
+                <select id="part1c-doc-type-select" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
                   <option value="">-- Select Document Type --</option>
-                  <option value="form_d">Certificate of Registration (Form D)</option>
+                  <option value="form_d_registration">Certificate of Registration (Form D)</option>
                   <option value="owner_nric">Owner's NRIC</option>
-                  <option value="ctos_report">CTOS/Experian Report</option>
+                  <option value="ctos_report">CTOS Report</option>
+                  <option value="experian_report">Experian Report</option>
                   <option value="partnership_agreement">Partnership Agreement/Deeds</option>
-                  <option value="partnership_nric">Partnership NRIC</option>
-                  <option value="form_49">Form 49</option>
+                  <option value="form_49">Form 49 (Bhd/Sdn Bhd)</option>
                   <option value="ssm_data">SSM Data</option>
-                  <option value="other">Other Supporting Document</option>
+                  <option value="other_supporting">Other Supporting Document</option>
                 </select>
               </div>
               <div style="margin-bottom: 15px;">
-                <input type="file" id="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: block; width: 100%; padding: 10px; border: 2px dashed #ccc; border-radius: 4px; background: white;">
+                <input type="file" id="part1c-doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: block; width: 100%; padding: 10px; border: 2px dashed #4CAF50; border-radius: 4px; background: white;">
               </div>
-              <button type="button" onclick="uploadDocument()" class="btn btn-primary" style="width: 100%;">📤 Upload Document</button>
-              <div id="upload-status" style="margin-top: 10px;"></div>
+              <button type="button" onclick="uploadPart1CDocument()" class="btn btn-success" style="width: 100%;">📤 Upload Document</button>
+              <div id="part1c-upload-status" style="margin-top: 10px;"></div>
             </div>
-            <div id="uploaded-docs-list" style="margin-top: 20px;"></div>
+            <div id="part1c-uploaded-docs-list" style="margin-top: 20px;"></div>
           </div>
-          ` : ''}
+          ` : `
+          <div style="background: rgba(100, 100, 100, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid rgba(100, 100, 100, 0.3);">
+            <h4 style="color: #666; margin-top: 0;">📎 Supporting Documents (Part 1C) - Review Status</h4>
+            <div id="part1c-submitted-docs-list"></div>
+          </div>
+          `}
 
           <script>
-            // Load existing documents on page load
+            // Load Part 1C documents on page load
             ${!submitted ? `
             window.addEventListener('DOMContentLoaded', function() {
-              loadUploadedDocuments();
+              loadPart1CDocuments();
             });
 
-            function loadUploadedDocuments() {
-              fetch('/client/due-diligence/documents')
+            function loadPart1CDocuments() {
+              fetch('/client/due-diligence/part1c-documents')
                 .then(res => res.json())
                 .then(docs => {
-                  displayUploadedDocuments(docs);
+                  displayPart1CDocuments(docs, false);
                 })
                 .catch(err => console.error('Error loading documents:', err));
             }
 
-            function displayUploadedDocuments(docs) {
-              const container = document.getElementById('uploaded-docs-list');
+            function displayPart1CDocuments(docs, submitted) {
+              const container = document.getElementById(submitted ? 'part1c-submitted-docs-list' : 'part1c-uploaded-docs-list');
               if (!docs || docs.length === 0) {
                 container.innerHTML = '<p style="color: var(--color-text-muted); font-style: italic;">No documents uploaded yet.</p>';
                 return;
               }
 
-              let html = '<h5 style="color: var(--color-neon-green); margin-bottom: 10px;">Uploaded Documents:</h5>';
+              let html = '<h5 style="color: ' + (submitted ? '#666' : '#4CAF50') + '; margin-bottom: 10px;">Uploaded Documents:</h5>';
               docs.forEach(doc => {
                 const docType = doc.document_type.replace(/_/g, ' ').toUpperCase();
                 const fileSize = (doc.file_size / 1024).toFixed(1);
-                html += '<div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">';
-                html += '<div>';
+                const uploadDate = new Date(doc.uploaded_at).toLocaleDateString();
+                const approvalStatus = doc.approval_status || 'pending';
+                const statusBadgeClass = approvalStatus === 'approved' ? 'badge-done' : approvalStatus === 'rejected' ? 'badge-danger' : 'badge-pending';
+                const statusText = approvalStatus === 'approved' ? '✓ Approved' : approvalStatus === 'rejected' ? '✗ Rejected' : '⏳ Pending Review';
+                
+                html += '<div style="background: rgba(255,255,255,0.08); padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">';
+                html += '<div style="flex: 1;">';
                 html += '<strong style="color: var(--color-text);">' + docType + '</strong><br>';
-                html += '<span style="color: var(--color-text-muted); font-size: 0.9em;">' + doc.original_filename + ' (' + fileSize + ' KB)</span>';
+                html += '<span style="color: var(--color-text-muted); font-size: 0.9em;">' + doc.original_filename + ' (' + fileSize + ' KB)</span><br>';
+                html += '<span style="color: var(--color-text-muted); font-size: 0.85em;">Uploaded: ' + uploadDate + '</span>';
+                if (doc.approval_notes) {
+                  html += '<br><span style="color: #ff9800; font-size: 0.85em;">📝 ' + doc.approval_notes + '</span>';
+                }
                 html += '</div>';
-                html += '<button type="button" onclick="deleteDocument(' + doc.id + ')" class="btn btn-danger btn-sm">Delete</button>';
+                html += '<div style="display: flex; gap: 10px; align-items: center;">';
+                html += '<span class="badge ' + statusBadgeClass + '" style="white-space: nowrap;">' + statusText + '</span>';
+                ${!submitted ? `if (approvalStatus === 'pending' || approvalStatus === 'rejected') {
+                  html += '<button type="button" onclick="deletePart1CDocument(' + doc.id + ')" class="btn btn-danger btn-sm">Delete</button>';
+                }` : ''}
+                html += '</div>';
+                html += '</div>';
                 html += '</div>';
               });
               container.innerHTML = html;
             }
 
-            function uploadDocument() {
-              const docType = document.getElementById('doc-type-select').value;
-              const fileInput = document.getElementById('doc-file-input');
-              const statusDiv = document.getElementById('upload-status');
+            function uploadPart1CDocument() {
+              const docType = document.getElementById('part1c-doc-type-select').value;
+              const fileInput = document.getElementById('part1c-doc-file-input');
+              const statusDiv = document.getElementById('part1c-upload-status');
 
               if (!docType) {
                 statusDiv.innerHTML = '<div class="alert alert-error">Please select a document type</div>';
@@ -937,21 +963,22 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
               const formData = new FormData();
               formData.append('document', fileInput.files[0]);
               formData.append('document_type', docType);
+              formData.append('part', '1c');
 
               statusDiv.innerHTML = '<div class="alert alert-info">Uploading...</div>';
 
-              fetch('/client/due-diligence/upload-document', {
+              fetch('/client/due-diligence/upload-part1c-document', {
                 method: 'POST',
                 body: formData
               })
               .then(res => res.json())
               .then(data => {
                 if (data.success) {
-                  statusDiv.innerHTML = '<div class="alert alert-success">✓ Document uploaded successfully!</div>';
+                  statusDiv.innerHTML = '<div class="alert alert-success">✓ Document uploaded successfully! Admin will review it shortly.</div>';
                   fileInput.value = '';
-                  document.getElementById('doc-type-select').value = '';
-                  loadUploadedDocuments();
-                  setTimeout(function() { statusDiv.innerHTML = ''; }, 3000);
+                  document.getElementById('part1c-doc-type-select').value = '';
+                  loadPart1CDocuments();
+                  setTimeout(function() { statusDiv.innerHTML = ''; }, 4000);
                 } else {
                   statusDiv.innerHTML = '<div class="alert alert-error">Error: ' + (data.error || 'Upload failed') + '</div>';
                 }
@@ -961,23 +988,36 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
               });
             }
 
-            function deleteDocument(docId) {
+            function deletePart1CDocument(docId) {
               if (!confirm('Delete this document?')) return;
 
-              fetch('/client/due-diligence/delete-document/' + docId, {
+              fetch('/client/due-diligence/delete-part1c-document/' + docId, {
                 method: 'POST'
               })
               .then(res => res.json())
               .then(data => {
                 if (data.success) {
-                  loadUploadedDocuments();
+                  loadPart1CDocuments();
                 } else {
                   alert('Error deleting document');
                 }
               })
               .catch(err => alert('Error: ' + err.message));
             }
-            ` : ''}
+            ` : `
+            window.addEventListener('DOMContentLoaded', function() {
+              loadSubmittedPart1CDocuments();
+            });
+
+            function loadSubmittedPart1CDocuments() {
+              fetch('/client/due-diligence/part1c-documents')
+                .then(res => res.json())
+                .then(docs => {
+                  displayPart1CDocuments(docs, true);
+                })
+                .catch(err => console.error('Error loading documents:', err));
+            }
+            `}
           </script>
 
           <div class="section-divider"><span class="section-counter">1D</span>Source of fund – (Tick more than 1 if required)</div>
@@ -992,20 +1032,232 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
           </div></div>
 
           <div class="section-divider"><span class="section-counter">2A</span>Other type of entity (Government/Club/Societies/Schools/Universities/Embassy etc)</div>
-          <div class="form-grid-full"><div class="form-group"><label>Entity name</label><input type="text" name="entity_name" value="${val('entity_name')}" ${readOnly}></div></div>
+          <div class="form-grid-full"><div class="form-group"><label>Entity name</label><input type="text" name="entity_name" value="${val('entity_name')}" ${readOnly}><div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 6px;"><strong>Note:</strong> Please state name of ministry/government department/government agencies/state government/club/society etc</div></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Registration No. (applicable only for other than government sector)</label><input type="text" name="entity_reg_no" value="${val('entity_reg_no')}" ${readOnly}></div><div class="form-group"><label>Tax Identification No. (TIN) (applicable only for other than government sector)</label><input type="text" name="entity_tin" value="${val('entity_tin')}" ${readOnly}></div></div>
           <div class="form-grid-2"><div class="form-group"><label>SST Registration No. (applicable only for other than government sector)</label><input type="text" name="entity_sst" value="${val('entity_sst')}" ${readOnly}></div><div class="form-group"><label>Date of Registration (applicable only for other than government sector)</label><input type="date" name="entity_date_registration" value="${val('entity_date_registration')}" ${readOnly}></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Country of Registration (applicable only for other than government sector)</label><input type="text" name="entity_country_registration" value="${val('entity_country_registration')}" ${readOnly}></div><div class="form-group"><label>Contact no.</label><input type="text" name="entity_contact_no" value="${val('entity_contact_no')}" ${readOnly}></div></div>
           <div class="form-grid-full"><div class="form-group"><label>Registered Address/Business Address</label><textarea name="entity_registered_address" rows="2" ${readOnly}>${val('entity_registered_address')}</textarea></div></div>
           <div class="form-grid-2"><div class="form-group"><label>Email Address</label><input type="email" name="entity_email" value="${val('entity_email')}" ${readOnly}></div><div class="form-group"><label>Contact Email Address</label><input type="email" name="entity_contact_email" value="${val('entity_contact_email')}" ${readOnly}></div></div>
-          <div class="form-grid-2"><div class="form-group"><label>Type of activity /function</label><input type="text" name="entity_activity_type" value="${val('entity_activity_type')}" ${readOnly}></div><div class="form-group"><label>Office Bearers / Officer-in-charge</label><textarea name="entity_office_bearers" rows="2" ${readOnly}>${val('entity_office_bearers')}</textarea></div></div>
+          <div class="form-grid-full"><div class="form-group"><label>Type of activity /function</label><input type="text" name="entity_activity_type" value="${val('entity_activity_type')}" ${readOnly}></div></div>
+          
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Office Bearers / Officer-in-charge</label>
+            <div class="info-banner" style="margin-bottom: 15px; background: rgba(100, 150, 200, 0.1); border-left: 4px solid #3498db;">
+              <p style="margin: 0 0 12px 0;"><strong>Explanatory Notes:</strong></p>
+              <p style="margin: 8px 0;"><strong>A.</strong> For Government sector including government department/agency/state government to obtain name and identification number of the Ketua Jabatan only.</p>
+              <p style="margin: 8px 0;"><strong>B.</strong> For entity like club, societies and charity organisation, to obtain name and identification no. of President, Deputy President, Treasurer and Secretary.</p>
+            </div>
+            <div class="radio-checkbox-group">
+              <div class="radio-checkbox-item"><input type="radio" name="entity_office_bearers_type" value="A" ${radio('entity_office_bearers_type', 'A')} ${readOnly} required><label><strong>A - Government Sector (Ketua Jabatan only)</strong></label></div>
+              <div class="radio-checkbox-item"><input type="radio" name="entity_office_bearers_type" value="B" ${radio('entity_office_bearers_type', 'B')} ${readOnly} required><label><strong>B - Club/Societies/Charity (President, Deputy, Treasurer, Secretary)</strong></label></div>
+            </div>
+            <label style="margin-top: 12px; display: block;">Details of Office Bearers</label>
+            <textarea name="entity_office_bearers" rows="3" ${readOnly} required>${val('entity_office_bearers')}</textarea>
+          </div></div>
+          
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Company Stamp/Seal</label>
+            <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; border: 2px dashed #4CAF50; margin-top: 8px;">
+              <p style="color: var(--color-text-muted); margin: 0 0 12px 0; font-size: 0.9em;">Upload your company stamp/seal image (PNG, JPG, PDF - Max 5MB). This will be placed at the bottom of page 3 in the generated PDF.</p>
+              ${!submitted ? `
+              <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <input type="file" id="stamp-file-input" accept=".png,.jpg,.jpeg,.pdf" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button type="button" onclick="uploadCompanyStamp()" class="btn btn-primary">📤 Upload Stamp</button>
+              </div>
+              <div id="stamp-upload-status"></div>
+              <div id="stamp-preview-container" style="margin-top: 10px;"></div>
+              ` : `
+              <div id="stamp-submitted-preview" style="text-align: center;"></div>
+              `}
+            </div>
+            <input type="hidden" id="stampData" name="company_stamp" value="${val('company_stamp')}">
+          </div></div>
 
-          <div class="section-divider"><span class="section-counter">D</span>Declaration</div>
-          <div class="info-banner"><p>*I, the undersigned hereby declare that all information submitted is correct to the best of my knowledge and there are no material omissions.</p></div>
-          <div class="form-grid-2"><div class="form-group"><label class="required">Signature</label><input type="text" name="declaration_signature" value="${val('declaration_signature')}" ${readOnly} placeholder="Type name as signature" required></div><div class="form-group"><label class="required">Name</label><input type="text" name="declaration_name" value="${val('declaration_name')}" ${readOnly} required></div></div>
-          <div class="form-grid-2"><div class="form-group"><label class="required">Designation</label><input type="text" name="declaration_designation" value="${val('declaration_designation')}" ${readOnly} required></div><div class="form-group"><label class="required">Date</label><input type="date" name="declaration_date" value="${val('declaration_date')}" ${readOnly} required></div></div>
+           <div class="section-divider"><span class="section-counter">D</span>Declaration</div>
+           <div class="info-banner"><p>*I, the undersigned hereby declare that all information submitted is correct to the best of my knowledge and there are no material omissions.</p></div>
+           
+           <div class="form-grid-2">
+             <div class="form-group">
+               <label class="required">Signature (Draw on canvas)</label>
+               <div style="margin-top: 8px;">
+                 <canvas id="signaturePad" width="300" height="100" style="border: 2px solid #ccc; border-radius: 4px; cursor: crosshair; background: white; display: block; margin-bottom: 8px;"></canvas>
+                 <button type="button" onclick="clearSignature()" class="btn btn-secondary btn-sm" style="margin-top: 5px;">🔄 Clear Signature</button>
+               </div>
+               <input type="hidden" id="signatureData" name="declaration_signature" value="${val('declaration_signature')}" required>
+             </div>
+             <div class="form-group">
+               <label class="required">Name</label>
+               <input type="text" name="declaration_name" value="${val('declaration_name')}" ${readOnly} required>
+             </div>
+           </div>
+           <div class="form-grid-2">
+             <div class="form-group">
+               <label class="required">Designation</label>
+               <input type="text" name="declaration_designation" value="${val('declaration_designation')}" ${readOnly} required>
+             </div>
+             <div class="form-group">
+               <label class="required">Date</label>
+               <input type="date" name="declaration_date" value="${val('declaration_date')}" ${readOnly} required>
+             </div>
+           </div>
 
-          <input type="hidden" name="_submitted" value="${submitted ? '1' : '0'}">
+           <script>
+             // Company Stamp Upload Handler
+             function uploadCompanyStamp() {
+               const fileInput = document.getElementById('stamp-file-input');
+               const statusDiv = document.getElementById('stamp-upload-status');
+
+               if (!fileInput.files || fileInput.files.length === 0) {
+                 statusDiv.innerHTML = '<div class="alert alert-error">Please select a file to upload</div>';
+                 return;
+               }
+
+               const formData = new FormData();
+               formData.append('stamp', fileInput.files[0]);
+
+               statusDiv.innerHTML = '<div class="alert alert-info">Uploading stamp...</div>';
+
+               fetch('/client/due-diligence/upload-stamp', {
+                 method: 'POST',
+                 body: formData
+               })
+               .then(res => res.json())
+               .then(data => {
+                 if (data.success) {
+                   statusDiv.innerHTML = '<div class="alert alert-success">✓ Stamp uploaded successfully!</div>';
+                   document.getElementById('stampData').value = data.stampData;
+                   fileInput.value = '';
+                   
+                   // Show preview
+                   const previewContainer = document.getElementById('stamp-preview-container');
+                   const img = new Image();
+                   img.src = data.stampData;
+                   img.style.maxWidth = '200px';
+                   img.style.maxHeight = '150px';
+                   img.style.marginTop = '10px';
+                   img.style.borderRadius = '4px';
+                   previewContainer.innerHTML = '<p style="color: var(--color-text-muted); font-size: 0.9em; margin-bottom: 5px;">Preview:</p>';
+                   previewContainer.appendChild(img);
+                   
+                   setTimeout(function() { statusDiv.innerHTML = ''; }, 3000);
+                 } else {
+                   statusDiv.innerHTML = '<div class="alert alert-error">Error: ' + (data.error || 'Upload failed') + '</div>';
+                 }
+               })
+               .catch(function(err) {
+                 statusDiv.innerHTML = '<div class="alert alert-error">Error: ' + err.message + '</div>';
+               });
+             }
+
+             // Load submitted stamp preview
+             window.addEventListener('DOMContentLoaded', function() {
+               const stampData = document.getElementById('stampData').value;
+               if (stampData && stampData.startsWith('data:image')) {
+                 const previewContainer = document.getElementById('stamp-submitted-preview');
+                 const img = new Image();
+                 img.src = stampData;
+                 img.style.maxWidth = '200px';
+                 img.style.maxHeight = '150px';
+                 img.style.borderRadius = '4px';
+                 previewContainer.appendChild(img);
+               }
+             });
+
+             // Canvas Signature Pad Implementation
+             const canvas = document.getElementById('signaturePad');
+             const ctx = canvas.getContext('2d');
+             const signatureInput = document.getElementById('signatureData');
+             let isDrawing = false;
+             let lastX = 0;
+             let lastY = 0;
+
+             // Restore signature if it exists
+             if (signatureInput.value && signatureInput.value.startsWith('data:image')) {
+               const img = new Image();
+               img.onload = function() {
+                 ctx.drawImage(img, 0, 0);
+               };
+               img.src = signatureInput.value;
+             }
+
+             canvas.addEventListener('mousedown', (e) => {
+               isDrawing = true;
+               const rect = canvas.getBoundingClientRect();
+               lastX = e.clientX - rect.left;
+               lastY = e.clientY - rect.top;
+             });
+
+             canvas.addEventListener('mousemove', (e) => {
+               if (!isDrawing) return;
+               const rect = canvas.getBoundingClientRect();
+               const x = e.clientX - rect.left;
+               const y = e.clientY - rect.top;
+               
+               ctx.lineWidth = 2;
+               ctx.lineCap = 'round';
+               ctx.lineJoin = 'round';
+               ctx.strokeStyle = '#000';
+               ctx.beginPath();
+               ctx.moveTo(lastX, lastY);
+               ctx.lineTo(x, y);
+               ctx.stroke();
+               
+               lastX = x;
+               lastY = y;
+             });
+
+             canvas.addEventListener('mouseup', () => {
+               isDrawing = false;
+               // Save signature as data URL
+               signatureInput.value = canvas.toDataURL('image/png');
+             });
+
+             canvas.addEventListener('mouseleave', () => {
+               isDrawing = false;
+             });
+
+             // Touch support for mobile devices
+             canvas.addEventListener('touchstart', (e) => {
+               isDrawing = true;
+               const touch = e.touches[0];
+               const rect = canvas.getBoundingClientRect();
+               lastX = touch.clientX - rect.left;
+               lastY = touch.clientY - rect.top;
+             });
+
+             canvas.addEventListener('touchmove', (e) => {
+               if (!isDrawing) return;
+               e.preventDefault();
+               const touch = e.touches[0];
+               const rect = canvas.getBoundingClientRect();
+               const x = touch.clientX - rect.left;
+               const y = touch.clientY - rect.top;
+               
+               ctx.lineWidth = 2;
+               ctx.lineCap = 'round';
+               ctx.lineJoin = 'round';
+               ctx.strokeStyle = '#000';
+               ctx.beginPath();
+               ctx.moveTo(lastX, lastY);
+               ctx.lineTo(x, y);
+               ctx.stroke();
+               
+               lastX = x;
+               lastY = y;
+             });
+
+             canvas.addEventListener('touchend', () => {
+               isDrawing = false;
+               signatureInput.value = canvas.toDataURL('image/png');
+             });
+
+             function clearSignature() {
+               ctx.clearRect(0, 0, canvas.width, canvas.height);
+               signatureInput.value = '';
+             }
+           </script>
+
+           <input type="hidden" name="_submitted" value="${submitted ? '1' : '0'}">
 
           <div style="margin-top: 30px;">
             ${!submitted ? '<button type="submit" class="btn btn-primary" name="action" value="save">Save Draft</button>' : ''}
@@ -1013,22 +1265,42 @@ function dueDiligenceForm(client, formData, user, errors = null, clientId = null
             <input type="hidden" name="_submitted" value="${submitted ? '1' : '0'}">
           </div>
         </form>
-        </div>
-        
-        <script>
-          function toggleAccordion(id) {
-            const content = document.getElementById('content-' + id);
-            const icon = document.getElementById('icon-' + id);
-            
-            if (content.classList.contains('open')) {
-              content.classList.remove('open');
-              icon.classList.remove('open');
-            } else {
-              content.classList.add('open');
-              icon.classList.add('open');
-            }
-          }
-        </script>
+         </div>
+         
+         <script>
+           function toggleAccordion(id) {
+             const content = document.getElementById('content-' + id);
+             const icon = document.getElementById('icon-' + id);
+             
+             if (content.classList.contains('open')) {
+               content.classList.remove('open');
+               icon.classList.remove('open');
+             } else {
+               content.classList.add('open');
+               icon.classList.add('open');
+             }
+           }
+
+           // Handle form submission - capture action button
+           document.addEventListener('DOMContentLoaded', function() {
+             const form = document.querySelector('form[action="/client/due-diligence"]');
+             if (form) {
+               const buttons = form.querySelectorAll('button[type="submit"]');
+               buttons.forEach(btn => {
+                 btn.addEventListener('click', function(e) {
+                   const actionInput = form.querySelector('input[name="_action"]');
+                   if (!actionInput) {
+                     const input = document.createElement('input');
+                     input.type = 'hidden';
+                     input.name = '_action';
+                     input.value = this.value;
+                     form.appendChild(input);
+                   }
+                 });
+               });
+             }
+           });
+         </script>
       </div>
     </div>
   `;
@@ -1187,6 +1459,102 @@ function dueDiligenceApprovalView(client, dueDiligence, user) {
   return htmlPage('Due Diligence Review', content, user);
 }
 
+// ============ PASSWORD CHANGE PAGE ============
+
+function passwordChangeBanner(user) {
+  if (!user || user.passwordChanged) return '';
+  
+  return `
+    <div class="alert alert-warning" style="margin: 0 0 20px 0; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong>⚠️ Security Notice:</strong> You're currently using a temporary password. For security, please change it to a permanent password.
+      </div>
+      <a href="/client/change-password" class="btn btn-primary btn-sm" style="margin-left: 15px; white-space: nowrap;">Change Password</a>
+    </div>
+  `;
+}
+
+function clientChangePasswordPage(user, error = null, successMessage = null, showRedirect = false) {
+  const content = `
+    <div class="container" style="max-width: 600px; margin: 40px auto;">
+      <div class="card">
+        <div class="card-header">
+          <h2>Change Your Password</h2>
+        </div>
+        
+        ${error ? `<div class="alert alert-error">${escapeHtml(error)}</div>` : ''}
+        ${successMessage ? `<div class="alert alert-success">${escapeHtml(successMessage)}</div>` : ''}
+        
+        ${showRedirect ? `
+          <script>
+            setTimeout(() => {
+              window.location.href = '/client/due-diligence';
+            }, 2000);
+          </script>
+        ` : ''}
+        
+        <form method="POST" action="/client/change-password" class="form-light">
+          <div class="form-group">
+            <label class="required">Current Password</label>
+            <input type="password" name="current_password" required placeholder="Enter your temporary password">
+            <small style="color: var(--color-text-muted);">Enter the temporary password you received</small>
+          </div>
+          
+          <div class="form-group">
+            <label class="required">New Password</label>
+            <input type="password" name="new_password" required placeholder="Enter new password">
+            <small style="color: var(--color-text-muted);">
+              Must contain at least 8 characters, including:<br>
+              • Uppercase letter (A-Z)<br>
+              • Lowercase letter (a-z)<br>
+              • Number (0-9)<br>
+              • Special character (!@#$%^&*)
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label class="required">Confirm New Password</label>
+            <input type="password" name="confirm_password" required placeholder="Re-enter new password">
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 30px;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Change Password</button>
+            <a href="/client/due-diligence" class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">Cancel</a>
+          </div>
+        
+
+           </div>
+
+           <div id="p2" style="display: ${showPart2 ? 'block' : 'none'};">
+           <div class="section-divider"><span class="section-counter">1A</span>Entity Information (Government/Club/Societies/Schools/Universities/Embassy)</div>
+           <div class="form-grid-full"><div class="form-group"><label class="required">Entity Name</label><input type="text" name="entity_name_part2" value="${val('entity_name_part2')}" ${readOnly} required></div></div>
+           <div class="form-grid-2"><div class="form-group"><label>Entity Registration No</label><input type="text" name="entity_reg_no_part2" value="${val('entity_reg_no_part2')}" ${readOnly}></div><div class="form-group"><label>Entity Type</label><input type="text" name="entity_type_part2" value="${val('entity_type_part2')}" ${readOnly}></div></div>
+           <div class="form-grid-2"><div class="form-group"><label class="required">Registered Address</label><textarea name="entity_address_part2" rows="2" ${readOnly} required>${val('entity_address_part2')}</textarea></div><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="entity_contact_part2" value="${val('entity_contact_part2')}" ${readOnly} required></div></div>
+           <div class="form-grid-full"><div class="form-group"><label class="required">Email Address</label><input type="email" name="entity_email_part2" value="${val('entity_email_part2')}" ${readOnly} required></div></div>
+           </div>
+           
+           <script>
+           function toggleFormParts() {
+             const part1 = document.getElementById('p1');
+             const part2 = document.getElementById('p2');
+             const part1Radio = document.getElementById('ep1');
+             if (part1Radio && part1Radio.checked) {
+               if (part1) part1.style.display = 'block';
+               if (part2) part2.style.display = 'none';
+             } else {
+               if (part1) part1.style.display = 'none';
+               if (part2) part2.style.display = 'block';
+             }
+           }
+           </script>
+           </form>
+      </div>
+    </div>
+  `;
+  
+  return htmlPage('Change Password', content, user);
+}
+
 module.exports = {
   siteHeader,
   htmlPage,
@@ -1200,8 +1568,11 @@ module.exports = {
   dueDiligenceApprovalView,
   helpRequestPage,
   adminHelpPage,
-  adminHelpDetailPage
+  adminHelpDetailPage,
+  passwordChangeBanner,
+  clientChangePasswordPage
 };
+
 
 
 

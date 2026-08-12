@@ -81,6 +81,23 @@ async function fillPdfTemplate(templatePath, fieldMappings, data, options = {}) 
           // is universally supported and clear inside the printed checkbox.
           page.drawText('X', { x, y, size, font: pdfFont, color });
         }
+      } else if (type === 'circle') {
+        // Draw a circle around selected radio option (for Office Bearers A/B)
+        const expectedValue = fieldOptions.checkedWhen;
+        const values = Array.isArray(value) ? value.map(String) : [String(value)];
+        const checked = expectedValue !== undefined
+          ? values.includes(String(expectedValue))
+          : value === true || value === 'true' || value === '1' || value === 'on';
+        if (checked) {
+          const radius = fieldOptions.radius || 10; // Default radius 10pt
+          page.drawCircle({
+            x,
+            y,
+            size: radius,
+            borderColor: color,
+            borderWidth: 1.5,
+          });
+        }
        } else if (type === 'text' || type === 'textarea') {
          // Draw text
          const text = String(value);

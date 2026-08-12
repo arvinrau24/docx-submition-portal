@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+
+const viewsPath = path.join(__dirname, '..', 'frontend', 'views.js');
+console.log('🔄 Final comprehensive form completion...\n');
+
+try {
+  let content = fs.readFileSync(viewsPath, 'utf8');
+  let changes = 0;
+
+  // Add Part 2 section and toggleFormParts function before closing form
+  if (!content.includes('id="p2"')) {
+    // Find the end of the form (</form> tag)
+    const formEndIndex = content.lastIndexOf('</form>');
+    if (formEndIndex > 0) {
+      const beforeForm = content.substring(0, formEndIndex);
+      const afterForm = content.substring(formEndIndex);
+      
+      const part2HTML = `
+
+           </div>
+
+           <div id="p2" style="display: \${showPart2 ? 'block' : 'none'};">
+           <div class="section-divider"><span class="section-counter">1A</span>Entity Information (Government/Club/Societies/Schools/Universities/Embassy)</div>
+           <div class="form-grid-full"><div class="form-group"><label class="required">Entity Name</label><input type="text" name="entity_name_part2" value="\${val('entity_name_part2')}" \${readOnly} required></div></div>
+           <div class="form-grid-2"><div class="form-group"><label>Entity Registration No</label><input type="text" name="entity_reg_no_part2" value="\${val('entity_reg_no_part2')}" \${readOnly}></div><div class="form-group"><label>Entity Type</label><input type="text" name="entity_type_part2" value="\${val('entity_type_part2')}" \${readOnly}></div></div>
+           <div class="form-grid-2"><div class="form-group"><label class="required">Registered Address</label><textarea name="entity_address_part2" rows="2" \${readOnly} required>\${val('entity_address_part2')}</textarea></div><div class="form-group"><label class="required">Contact Number</label><input type="tel" name="entity_contact_part2" value="\${val('entity_contact_part2')}" \${readOnly} required></div></div>
+           <div class="form-grid-full"><div class="form-group"><label class="required">Email Address</label><input type="email" name="entity_email_part2" value="\${val('entity_email_part2')}" \${readOnly} required></div></div>
+           </div>
+           `;
+      
+      content = beforeForm + part2HTML + afterForm;
+      changes++;
+      console.log('✓ Added Part 2 section');
+    }
+  }
+
+  // Add toggleFormParts function if not present
+  if (!content.includes('function toggleFormParts')) {
+    const functionHTML = `
+           <script>
+           function toggleFormParts() {
+             const part1 = document.getElementById('p1');
+             const part2 = document.getElementById('p2');
+             const part1Radio = document.getElementById('ep1');
+             if (part1Radio && part1Radio.checked) {
+               if (part1) part1.style.display = 'block';
+               if (part2) part2.style.display = 'none';
+             } else {
+               if (part1) part1.style.display = 'none';
+               if (part2) part2.style.display = 'block';
+             }
+           }
+           </script>
+           `;
+    
+    // Insert before closing </form>
+    const formEndIndex = content.lastIndexOf('</form>');
+    if (formEndIndex > 0) {
+      content = content.substring(0, formEndIndex) + functionHTML + content.substring(formEndIndex);
+      changes++;
+      console.log('✓ Added toggleFormParts function');
+    }
+  }
+
+  if (changes > 0) {
+    fs.writeFileSync(viewsPath, content, 'utf8');
+    console.log('\n✅ Form completion successful!\n');
+  } else {
+    console.log('✓ All components already present\n');
+  }
+
+} catch (error) {
+  console.error('❌ Error:', error.message);
+  process.exit(1);
+}

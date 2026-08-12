@@ -89,6 +89,7 @@ async function runTest() {
       company_office_address: 'Level 12, Tower A, Menara Sentosa\nNo. 201, Jalan Raja Chulan\n50200 Kuala Lumpur, Malaysia',
       company_registration_no: 'SSM001234567890',
       company_tax_number: 'CT1234567890',
+      'Date of Incorporation': '2023-01-15',
       company_ssm_no: 'SSM202301012345',
       company_sst_no: 'SST1234567890AB',
       

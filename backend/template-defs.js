@@ -55,9 +55,84 @@ const TEMPLATES = {
       'commercial_model_outright_purchase': { x: 277, y: 452, size: 9, type: 'checkbox', page: 1, source: 'commercial_model', options: { checkedWhen: 'Outright Purchase (1 Year)' } },
        'commercial_model_lease_to_own': { x: 277, y: 437, size: 9, type: 'checkbox', page: 1, source: 'commercial_model', options: { checkedWhen: 'Lease-to-Own (3-5 years)' } },
        'commercial_model_rent': { x: 277, y: 424, size: 9, type: 'checkbox', page: 1, source: 'commercial_model', options: { checkedWhen: 'Rent' } },
+        
+     }
+   },
+
+   // TNG Due Diligence Form Template (3 pages)
+   // Coordinates extracted from actual PDF analysis (612pt × 792pt, BOTTOM-LEFT origin)
+   due_diligence: {
+     file: path.join(__dirname, '..', 'public', 'TNGSB Due Diligence Form.pdf'),
+     name: 'TNG Due Diligence Form',
+     fields: {
+       // ===== PAGE 0 (First Page) =====
+       // Header - Date (top right)
+       'header_date': { x: 175, y: 670, size: 9, type: 'text', page: 0, maxWidth: 60 },
+
+        // Section 1B - Company Information (Text Fields)
+        'company_name': { x: 165, y: 530, size: 9, type: 'text', page: 0, maxWidth: 350 },
+        'old_reg_no': { x: 165, y: 500, size: 9, type: 'text', page: 0, maxWidth: 350 },
+        'new_reg_no': { x: 415, y: 500, size: 9, type: 'text', page: 0, maxWidth: 350 },
+        'company_tax_number': { x: 165, y: 460, size: 9, type: 'text', page: 0, maxWidth: 350 },
+        'company_sst_number': { x: 415, y: 460, size: 9, type: 'text', page: 0, maxWidth: 350 },
+        'Date of Incorporation': { x: 165, y: 430, size: 9, type: 'text', page: 0, maxWidth: 150 },
+        'country_of_incorporation': { x: 165, y: 400, size: 9, type: 'text', page: 0, maxWidth: 150 },
+        'contact_number': { x: 165, y: 379, size: 9, type: 'text', page: 0, maxWidth: 100 },
+        'company_office_address': { x: 165, y: 360, size: 9, type: 'text', page: 0, maxWidth: 500 },
+
+       // Section 1C - Principal Place of Business (Textarea and Text)
+       'principal_business_address': { x: 165, y: 345, size: 9, type: 'textarea', page: 0, maxWidth: 350 },
+       'nature_of_business': { x: 165, y: 328, size: 9, type: 'text', page: 0, maxWidth: 350 },
+
+       // Section 1D - Contact Information (Text Fields)
+       'business_email': { x: 165, y: 310, size: 9, type: 'text', page: 0, maxWidth: 100 },
+       'contact_person_email': { x: 415, y: 310, size: 9, type: 'text', page: 0, maxWidth: 100 },
+       'has_corporate_shareholder_yes': { x: 173, y: 243, size: 9, type: 'checkbox', page: 0, source: 'has_corporate_shareholder', options: { checkedWhen: 'Yes' } },
+       'has_corporate_shareholder_no': { x: 302, y: 243, size: 9, type: 'checkbox', page: 0, source: 'has_corporate_shareholder', options: { checkedWhen: 'No' } },
+
+       'corporate_shareholder_details': { x: 170, y: 220, size: 9, type: 'text', page: 0, maxWidth: 350 },
+       'is_corporate_group_yes': { x: 167, y: 182, size: 9, type: 'checkbox', page: 0, source: 'is_corporate_group', options: { checkedWhen: 'Yes' } },
+       'is_corporate_group_no': { x: 369, y: 182, size: 9, type: 'checkbox', page: 0, source: 'is_corporate_group', options: { checkedWhen: 'No' } },
+       'group_structure_details': { x: 170, y: 160, size: 9, type: 'text', page: 0, maxWidth: 350 },
+
+       // ===== PAGE 1 (Second Page) =====
+        // Section 2A - Business Registration (Text Fields)
        
-    }
-  }
+
+       // Section 2C - Source of Funds (Checkboxes)
+       'source_of_funds_sales': { x: 80, y: 492, size: 8, type: 'checkbox', page: 1, source: 'source_of_fund', options: { checkedWhen: 'Sales profits' } },
+       'source_of_funds_capital': { x: 188, y: 492, size: 8, type: 'checkbox', page: 1, source: 'source_of_fund', options: { checkedWhen: 'Capital injection' } },
+       'source_of_funds_borrowing': { x: 80, y: 480, size: 8, type: 'checkbox', page: 1, source: 'source_of_fund', options: { checkedWhen: 'Borrowing (bank borrowing/ advances from shareholders)' } },
+       'source_of_funds_others': { x: 80, y: 452, size: 8, type: 'checkbox', page: 1, source: 'source_of_fund', options: { checkedWhen: 'Others' } },
+       'source_of_funds_others_specify': { x: 154, y: 453, size: 9, type: 'text', page: 1, maxWidth: 350 },
+
+       // Section 2D - Entity Information (Text and Textarea Fields)
+       'entity_date_of_application': { x: 170, y: 360, size: 9, type: 'text', page: 1, maxWidth: 150 },
+       'entity_name': { x: 170, y: 315, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       'entity_reg_no': { x: 170, y: 285, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       'entity_tin': { x: 170, y: 225, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       'entity_sst': { x: 270, y: 225, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       'entity_date_registration': { x: 170, y: 160, size: 9, type: 'text', page: 1, maxWidth: 150 },
+       'entity_country_registration': { x: 170, y: 85, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       'entity_registered_address': { x: 170, y: 754, size: 9, type: 'textarea', page: 2, maxWidth: 350 },
+       'entity_email': { x: 170, y: 687, size: 9, type: 'text', page: 2, maxWidth: 350 },
+       'entity_contact_email': { x: 415, y: 687, size: 9, type: 'text', page: 2, maxWidth: 350 },
+       'entity_activity_type': { x: 170, y: 665, size: 9, type: 'text', page: 2, maxWidth: 350 },
+       // Office Bearers A/B - Draw circles around selected option based on entity_office_bearers_type
+       'entity_office_bearers_A': { x: 173, y: 635, size: 9, type: 'circle', page: 2, source: 'entity_office_bearers_type', options: { checkedWhen: 'A', radius: 6 } },
+       'entity_office_bearers_B': { x: 173, y: 612, size: 9, type: 'circle', page: 2, source: 'entity_office_bearers_type', options: { checkedWhen: 'B', radius: 6 } },
+       'entity_contact_no': { x: 170, y: 35, size: 9, type: 'text', page: 1, maxWidth: 350 },
+       // ===== PAGE 2 (Third Page) =====
+       // Section 3 - Declaration and Signature
+       'declaration_signature': { x: 170, y: 470, size: 9, type: 'signature', page: 2, options: { width: 300, height: 100 } },
+       'declaration_name': { x: 170, y: 430, size: 9, type: 'text', page: 2, maxWidth: 350 },
+       'declaration_designation': { x: 170, y: 395, size: 9, type: 'text', page: 2, maxWidth: 350 },
+       'declaration_date': { x: 170, y: 355, size: 9, type: 'text', page: 2, maxWidth: 150 },
+
+       // Section 4 - Company Stamp/Chop (optional visual marker, right side)
+       'company_stamp_note': { x: 170, y: 323, size: 8, type: 'text', page: 2, maxWidth: 350 }
+     }
+   }
 };
 
 /**

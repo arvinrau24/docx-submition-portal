@@ -1,0 +1,28 @@
+﻿           <textarea name="entity_office_bearers" rows="3" ${readOnly} required>${val('entity_office_bearers')}</textarea>
+          </div></div>
+            </div>
+          
+            <div class="form-grid-full"><div class="form-group">
+            <label class="required">Company Stamp/Seal</label>
+            <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; border: 2px dashed #4CAF50; margin-top: 8px;">
+              <p style="color: var(--color-text-muted); margin: 0 0 12px 0; font-size: 0.9em;">Upload your company stamp/seal image (PNG, JPG, PDF - Max 5MB). This will be placed at the bottom of page 3 in the generated PDF.</p>
+              ${!submitted ? `
+              <div id="stamp-upload-section" style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <input type="file" id="stamp-file-input" accept=".png,.jpg,.jpeg,.pdf" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button type="button" onclick="uploadCompanyStamp()" class="btn btn-primary">ðŸ“¤ Upload Stamp</button>
+              </div>
+              <div id="stamp-upload-status"></div>
+              ` : ``}
+              <div id="stamp-preview-container" style="margin-top: 10px;"></div>
+            </div>
+            <input type="hidden" id="stampData" name="company_stamp" value="${val('company_stamp')}">
+          </div></div>
+
+           <div class="section-divider"><span class="section-counter">D</span>Declaration</div>
+           <div class="info-banner"><p>*I, the undersigned hereby declare that all information submitted is correct to the best of my knowledge and there are no material omissions.</p></div>
+           
+           <div class="form-grid-2">
+             <div class="form-group">
+               <label class="required">Signature (Draw on canvas)</label>
+               <div style="margin-top: 8px;">
+                 <canvas id="signaturePad" width="300" height="100" 

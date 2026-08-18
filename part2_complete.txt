@@ -1,0 +1,70 @@
+﻿function dueDiligenceFormPart2(client, formData, user, errors = null, clientId = null) {
+  const d = formData || {};
+  const submitted = !!d._submitted;
+  const approvalStatus = d._approval_status || 'pending';
+  const readOnly = submitted ? 'disabled' : '';
+  const formAction = '/client/due-diligence/part2';
+  const val = (key) => escapeHtml(d[key] || '');
+  const radio = (key, val) => d[key] === val ? 'checked' : '';
+
+  const statusBadges = {
+    'pending': '<span class="badge badge-pending">Pending Review</span>',
+    'approved': '<span class="badge badge-done">Approved</span>',
+    'rejected': '<span class="badge badge-danger">Rejected</span>'
+  };
+
+  const content = `
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
+          <h2>Due Diligence Form - Part 2</h2>
+          <div>${submitted ? statusBadges[approvalStatus] || statusBadges['pending'] : '<span class="badge badge-pending">Draft</span>'}</div>
+        </div>
+        ${passwordChangeBanner(user)}
+        ${errors ? '<div class="alert alert-error">' + errors + '</div>' : ''}
+        ${submitted && approvalStatus === 'approved' ? '<div class="alert alert-success"><strong>✓ Approved</strong></div>' : ''}
+        ${submitted && approvalStatus === 'rejected' ? '<div class="alert alert-error"><strong>✗ Rejected</strong></div>' : ''}
+        ${submitted && approvalStatus === 'pending' ? '<div class="alert alert-info"><strong>Under Review</strong></div>' : ''}
+        
+        <div style="padding: 20px; background: rgba(135, 206, 250, 0.1); border-radius: 8px; margin: 20px; border-left: 4px solid var(--color-sky-blue);">
+          <p style="margin: 0;"><strong style="color: var(--color-sky-blue);">📋 Part 2:</strong> Government / Clubs / Societies / Schools / Universities / Embassies</p>
+        </div>
+
+        <form method="POST" action="${formAction}" class="form-light">
+          <input type="hidden" name="entity_type_selection" value="part2">
+          
+          <div class="section-divider"><span class="section-counter">2A</span>Other type of entity (Government/Club/Societies/Schools/Universities/Embassy etc)</div>
+          
+          <div class="form-grid-full"><div class="form-group"><label class="required">Date of application</label><input type="date" name="date_of_application" value="${val('date_of_application')}" ${readOnly} required></div></div>
+          
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Entity name</label>
+            <input type="text" name="entity_name" value="${val('entity_name')}" ${readOnly} required>
+            <div style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 6px;">
+              <strong>Note:</strong> Please state name of ministry/government department/government agencies/state government/club/society etc
+            </div>
+          </div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Registration No.</label><input type="text" name="entity_reg_no" value="${val('entity_reg_no')}" ${readOnly}></div><div class="form-group"><label>Tax ID (TIN)</label><input type="text" name="entity_tin" value="${val('entity_tin')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>SST Registration No.</label><input type="text" name="entity_sst" value="${val('entity_sst')}" ${readOnly}></div><div class="form-group"><label>Date of Registration</label><input type="date" name="entity_date_registration" value="${val('entity_date_registration')}" ${readOnly}></div></div>
+          <div class="form-grid-2"><div class="form-group"><label>Country</label><input type="text" name="entity_country_registration" value="${val('entity_country_registration')}" ${readOnly}></div><div class="form-group"><label class="required">Contact no.</label><input type="text" name="entity_contact_no" value="${val('entity_contact_no')}" ${readOnly} required></div></div>
+          <div class="form-grid-full"><div class="form-group"><label class="required">Registered Address / Business Address (whichever is applicable)</label><textarea name="entity_registered_address" rows="2" ${readOnly} required>${val('entity_registered_address')}</textarea></div></div>
+          <div class="form-grid-2"><div class="form-group"><label class="required">Email</label><input type="email" name="entity_email" value="${val('entity_email')}" ${readOnly} required></div><div class="form-group"><label>Contact Email</label><input type="email" name="entity_contact_email" value="${val('entity_contact_email')}" ${readOnly}></div></div>
+                    <div class="form-grid-full"><div class="form-group">
+            <label>Type of activity / function</label>
+            <input type="text" name="entity_activity_type" value="${val('entity_activity_type')}" ${readOnly}>
+          </div></div>
+          
+          <div class="form-grid-full"><div class="form-group">
+            <label class="required">Office Bearers / Officer-in-charge</label>
+            <div class="info-banner" style="margin-bottom: 15px; background: rgba(100, 150, 200, 0.1); border-left: 4px solid #3498db;">
+              <p style="margin: 0 0 12px 0;"><strong>Explanatory Notes:</strong></p>
+              <p style="margin: 8px 0;"><strong>A.</strong> For Government sector including government department/agency/state government to obtain name and identification number of the Ketua Jabatan only.</p>
+              <p style="margin: 8px 0;"><strong>B.</strong> For entity like club, societies and charity organisation, to obtain name and identification no. of President, Deputy President, Treasurer and Secretary.</p>
+            </div>
+            <div class="radio-checkbox-group">
+              <div class="radio-checkbox-item"><input type="radio" name="entity_office_bearers_type" value="A" ${radio('entity_office_bearers_type', 'A')} ${readOnly} required><label><strong>A - Government Sector (Ketua Jabatan only)</strong></label></div>
+              <div class="radio-checkbox-item"><input type="radio" name="entity_office_bearers_type" value="B" ${radio('entity_office_bearers_type', 'B')} ${readOnly} required><label><strong>B - Club/Societies/Charity (President, Deputy, Treasurer, Secretary)</strong></label></div>
+            </div>
+            <label style="margin-top: 12px; display: block;">Details of Office Bearers</label>
+            <textarea name="entity_office_bearers" rows="3" ${readOnly} required>${val('entity_office_bearers')}</textarea>
+          </div></div><div class="section-divider"><span class="section-counter">2B</span>Declaration</div>

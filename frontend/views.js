@@ -299,7 +299,7 @@ function addClientPage(user, error = null) {
           <div class="form-grid-full"><div class="radio-checkbox-item"><input type="checkbox" name="declaration" value="1" required><label>I certify that the information provided is true and complete.</label></div></div>
 
           <!-- SUBMIT BUTTONS -->
-          <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #E0E0E0; display: flex; gap: 15px; flex-wrap: wrap;">
+          <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #070000; display: flex; gap: 15px; flex-wrap: wrap;">
             <button type="submit" name="action" value="save" class="btn btn-primary" style="padding: 18px 50px; font-size: 18px;">Save Client</button>
             <button type="submit" name="action" value="save_download" class="btn btn-success" style="padding: 18px 50px; font-size: 18px;">Save & Download Form</button>
           </div>
